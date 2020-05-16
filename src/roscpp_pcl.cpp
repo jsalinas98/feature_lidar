@@ -14,10 +14,14 @@
 // Include PointCloud2 message
 #include <sensor_msgs/PointCloud2.h>
 
-/******************************************************************************************************************/
-// Prueba Superficies normales
+/********************************************** PRUEBA1 ********************************************************************/
 #include <pcl/features/normal_3d.h>
-/******************************************************************************************************************/
+/********************************************** FIN PRUEBA1 ****************************************************************/
+
+/********************************************** PRUEBA2 ********************************************************************/
+#include <pcl/visualization/pcl_visualizer.h>
+
+/********************************************** FIN PRUEBA2 ****************************************************************/
 
 // Topics
 static const std::string IMAGE_TOPIC = "/velodyne_points";
@@ -25,6 +29,24 @@ static const std::string PUBLISH_TOPIC = "/pcl/points";
 
 // ROS Publisher
 ros::Publisher pub;
+
+/********************************************** PRUEBA2 ********************************************************************/
+pcl::visualization::PCLVisualizer::Ptr normalsVis (
+    pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
+{
+  // --------------------------------------------------------
+  // -----Open 3D viewer and add point cloud and normals-----
+  // --------------------------------------------------------
+  pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+  viewer->setBackgroundColor (0, 0, 0);
+  viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
+  viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
+  viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, normals, 10, 0.05, "normals");
+  viewer->addCoordinateSystem (1.0);
+  viewer->initCameraParameters ();
+  return (viewer);
+}
+/********************************************** FIN PRUEBA2 ****************************************************************/
 
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
@@ -44,7 +66,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 
 
-	/******************************************************************************************************************/
+	/********************************************** PRUEBA1 ********************************************************************/
 	//Prueba Superficies Normales
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromPCLPointCloud2 (cloud_filtered, *cloud_nueva);
@@ -66,18 +88,26 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 	// Compute the features
 	ne.compute (*cloud_normals);
-	/******************************************************************************************************************/
+	/********************************************** FIN PRUEBA1 ****************************************************************/
 
 
+	/********************************************** PRUEBA2 ********************************************************************/
+	pcl::visualization::PCLVisualizer::Ptr viewer;
+    viewer = normalsVis(cloud_nueva, cloud_normals);
+	while (!viewer->wasStopped ())
+	{
+		viewer->spinOnce (100);
+	}
+	/********************************************** FIN PRUEBA2 ****************************************************************/
 
 	// Convert to ROS data type
 	sensor_msgs::PointCloud2 output;
 	//pcl_conversions::fromPCL(cloud_filtered, output);   //Conversion antigua
 
-	/******************************************************************************************************************/
+	/********************************************** PRUEBA1 ********************************************************************/
 	pcl::toROSMsg(*cloud_normals, output);    //Conversion nueva
 	//No da error e imprime el mensaje, pero no lo visualizo en el rviz
-	/******************************************************************************************************************/
+	/********************************************** FIN PRUEBA1 ****************************************************************/
 
 	// Publish the data
 	pub.publish (output);
