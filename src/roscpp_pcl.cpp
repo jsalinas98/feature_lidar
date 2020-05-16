@@ -2,6 +2,12 @@
 * PCL Example using ROS and CPP
 */
 
+/*
+ * PRUEBA1 -> Calcular normales
+ * PRUEBA2 -> Visualizador 3D con las normales
+ * PRUEBA3 -> Calcular histograma
+ */
+
 // Include the ROS library
 #include <ros/ros.h>
 
@@ -20,8 +26,11 @@
 
 /********************************************** PRUEBA2 ********************************************************************/
 #include <pcl/visualization/pcl_visualizer.h>
-
 /********************************************** FIN PRUEBA2 ****************************************************************/
+
+/********************************************** PRUEBA3 ********************************************************************/
+#include <pcl/features/pfh.h>
+/********************************************** FIN PRUEBA3 ****************************************************************/
 
 // Topics
 static const std::string IMAGE_TOPIC = "/velodyne_points";
@@ -40,10 +49,10 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
   pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
   viewer->setBackgroundColor (0, 0, 0);
   viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-  viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");  // Edita la forma de ver los puntos
-  viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, normals, 10, 0.05, "normals");  //Muestra las lineas
-  viewer->addCoordinateSystem (1.0); //Muestra los ejes
-  viewer->initCameraParameters ();
+  //viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");  // Edita la forma de ver los puntos
+  viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, normals, 10, 0.5, "normals");  //Muestra las lineas
+  viewer->addCoordinateSystem (0.5); //Muestra los ejes
+  viewer->initCameraParameters ();  //Inicia la vista en el origen
   return (viewer);
 }
 /********************************************** FIN PRUEBA2 ****************************************************************/
@@ -84,7 +93,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
 
 	// Use all neighbors in a sphere of radius 3cm
-	ne.setRadiusSearch (0.5);
+	ne.setRadiusSearch (0.1);
 
 	// Compute the features
 	ne.compute (*cloud_normals);
@@ -99,6 +108,24 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 		viewer->spinOnce (100);
 	}
 	/********************************************** FIN PRUEBA2 ****************************************************************/
+
+
+	/********************************************** PRUEBA3 ********************************************************************/
+	// Create the PFH estimation class, and pass the input dataset+normals to it
+	pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
+	pfh.setInputCloud (cloud_nueva);
+	pfh.setInputNormals (cloud_normals);
+	
+	// Output datasets
+	pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
+
+	// Use all neighbors in a sphere of radius 5cm
+	// IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
+	pfh.setRadiusSearch (0.05);
+
+	// Compute the features
+	pfh.compute (*pfhs);
+	/********************************************** FIN PRUEBA3 ****************************************************************/
 
 	// Convert to ROS data type
 	sensor_msgs::PointCloud2 output;
