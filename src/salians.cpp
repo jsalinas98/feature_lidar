@@ -39,7 +39,7 @@ static const std::string PUBLISH_TOPIC = "/pcl/points";
 // ROS Publisher
 ros::Publisher pub;
 
-/********************************************** PRUEBA2 ********************************************************************/
+/********************************************** PRUEBA2 ********************************************************************
 pcl::visualization::PCLVisualizer::Ptr normalsVis (
     pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
 {
@@ -60,22 +60,19 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
 	// Container for original & filtered data
-	pcl::PCLPointCloud2* cloud = new pcl::PCLPointCloud2;
-	pcl::PCLPointCloud2ConstPtr cloudPtr(cloud);
-	pcl::PCLPointCloud2 cloud_filtered;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr _in1_pcl(new pcl::PointCloud<pcl::PointXYZI>());
+	pcl::fromROSMsg(*cloud_msg, *_in1_pcl);
+	pcl::PointCloud<pcl::PointXYZI> cloud_filtered;
 
-	// Convert to PCL data type
-	pcl_conversions::toPCL(*cloud_msg, *cloud);
 
 	// Perform the actual filtering
-	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-	sor.setInputCloud (cloudPtr);
+	pcl::VoxelGrid<pcl::PointXYZI> sor; 
+	sor.setInputCloud (_in1_pcl);
 	sor.setLeafSize (0.1, 0.1, 0.1);
 	sor.filter (cloud_filtered);
 
 
-
-	/********************************************** PRUEBA1 ********************************************************************/
+	/********************************************** PRUEBA1 ********************************************************************
 	//Prueba Superficies Normales
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromPCLPointCloud2 (cloud_filtered, *cloud_nueva);
@@ -100,7 +97,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	/********************************************** FIN PRUEBA1 ****************************************************************/
 
 
-	/********************************************** PRUEBA2 ********************************************************************/
+	/********************************************** PRUEBA2 ********************************************************************
 	pcl::visualization::PCLVisualizer::Ptr viewer;
     viewer = normalsVis(cloud_nueva, cloud_normals);
 	while (!viewer->wasStopped ())
@@ -110,7 +107,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	/********************************************** FIN PRUEBA2 ****************************************************************/
 
 
-	/********************************************** PRUEBA3 ********************************************************************/
+	/********************************************** PRUEBA3 ********************************************************************
 	// Create the PFH estimation class, and pass the input dataset+normals to it
 	pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
 	pfh.setInputCloud (cloud_nueva);
@@ -132,7 +129,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	//pcl_conversions::fromPCL(cloud_filtered, output);   //Conversion antigua
 
 	/********************************************** PRUEBA1 ********************************************************************/
-	pcl::toROSMsg(*cloud_normals, output);    //Conversion nueva
+	pcl::toROSMsg(cloud_filtered, output);    //Conversion nueva
 	//No da error e imprime el mensaje, pero no lo visualizo en el rviz
 	/********************************************** FIN PRUEBA1 ****************************************************************/
 
