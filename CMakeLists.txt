@@ -137,6 +137,9 @@ include_directories(
 
   add_executable (cylinder_segmentation src/cylinder_segmentation.cpp)
   target_link_libraries (cylinder_segmentation ${catkin_LIBRARIES})
+
+  add_executable (visualizer src/visualizer.cpp)
+  target_link_libraries (visualizer ${catkin_LIBRARIES})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/feature_lidar.cpp
