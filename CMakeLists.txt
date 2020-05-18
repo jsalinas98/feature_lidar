@@ -130,9 +130,9 @@ include_directories(
 
   add_executable(roscpp_pcl src/roscpp_pcl.cpp)
   add_executable(segmentation src/segmentation.cpp)
-  add_executable(roscpp_pcl_rsd src/roscpp_pcl_rsd.cpp)
+  #add_executable(roscpp_pcl_rsd src/roscpp_pcl_rsd.cpp)
   target_link_libraries(roscpp_pcl ${catkin_LIBRARIES})
-  target_link_libraries(roscpp_pcl_rsd ${catkin_LIBRARIES})
+  #target_link_libraries(roscpp_pcl_rsd ${catkin_LIBRARIES})
   target_link_libraries(segmentation ${catkin_LIBRARIES})
 
   add_executable (cylinder_segmentation src/cylinder_segmentation.cpp)
