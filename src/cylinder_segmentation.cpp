@@ -33,8 +33,8 @@ main (int argc, char** argv)
   pcl::PointIndices::Ptr inliers_plane (new pcl::PointIndices), inliers_cylinder (new pcl::PointIndices);
 
   // Read in the cloud data
-  reader.read ("table_scene_mug_stereo_textured.pcd", *cloud);
-  //reader.read ("Esto.pcd", *cloud);
+  //reader.read ("/home/pedro/catkin_ws/src/feature_lidar/src/PCD/Esto.pcd", *cloud);
+  reader.read ("Esto.pcd", *cloud);
   std::cerr << "PointCloud has: " << cloud->points.size () << " data points." << std::endl;
 
   // Build a passthrough filter to remove spurious NaNs
@@ -43,6 +43,7 @@ main (int argc, char** argv)
   pass.setFilterLimits (0, 1.5);
   pass.filter (*cloud_filtered);
   std::cerr << "PointCloud after filtering has: " << cloud_filtered->points.size () << " data points." << std::endl;
+  writer.write ("/home/pedro/catkin_ws/src/feature_lidar/src/PCD/filtrado_nuestro.pcd", *cloud_filtered, false);
 
   // Estimate point normals
   ne.setSearchMethod (tree);
@@ -72,7 +73,8 @@ main (int argc, char** argv)
   pcl::PointCloud<PointT>::Ptr cloud_plane (new pcl::PointCloud<PointT> ());
   extract.filter (*cloud_plane);
   std::cerr << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
-  writer.write ("table_scene_mug_stereo_textured_plane.pcd", *cloud_plane, false);
+  //writer.write ("/home/pedro/catkin_ws/src/feature_lidar/src/PCD/plane_nuestro.pcd", *cloud_plane, false);
+  writer.write ("plane_nuestro.pcd", *cloud_plane, false);
 
   // Remove the planar inliers, extract the rest
   extract.setNegative (true);
@@ -108,7 +110,8 @@ main (int argc, char** argv)
   else
   {
 	  std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->points.size () << " data points." << std::endl;
-	  writer.write ("table_scene_mug_stereo_textured_cylinder.pcd", *cloud_cylinder, false);
+	  //writer.write ("/home/pedro/catkin_ws/src/feature_lidar/src/PCD/cylinder_nuestro.pcd", *cloud_cylinder, false);
+    writer.write ("cylinder_nuestro.pcd", *cloud_cylinder, false);
   }
   return (0);
 }
