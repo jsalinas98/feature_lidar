@@ -41,7 +41,7 @@ static const std::string PUBLISH_TOPIC = "/pcl/points";
 // ROS Publisher
 ros::Publisher pub;
 
-/********************************************** PRUEBA2 ********************************************************************/
+/********************************************** PRUEBA2 ********************************************************************
 pcl::visualization::PCLVisualizer::Ptr normalsVis (
     pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
 {
@@ -76,23 +76,23 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Perform the actual filtering
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud (cloudPtr);
-	sor.setLeafSize (0.01, 0.01, 0.01);
+	sor.setLeafSize (0.1, 0.1, 0.1);
 	sor.filter (cloud_filtered);
 
-
+	ROS_INFO_STREAM("Publica " << ros::this_node::getName());
 
 	/********************************************** PRUEBA1 ********************************************************************/
 	//Prueba Superficies Normales
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromPCLPointCloud2 (cloud_filtered, *cloud_nueva);
 
 	// Create the normal estimation class, and pass the input dataset to it
-	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+	pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
 	ne.setInputCloud (cloud_nueva);
 
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
 	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
 	ne.setSearchMethod (tree);
 
 	// Output datasets
@@ -103,10 +103,16 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 	// Compute the features
 	ne.compute (*cloud_normals);
+
+/*****************************PRUEBA SALINAS CONCATENAR (aviso,no va)***********************************************/
+	// concatenate the XYZ and normal fields
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::_PointXYZRGBNormal>);
+    pcl::concatenateFields<pcl::PointXYZRGB, pcl::Normal, pcl::PointXYZRGBNormal>(*cloud_nueva, *cloud_normals, *cloud_with_normals);
+/******************************************************************************************************/
 	/********************************************** FIN PRUEBA1 ****************************************************************/
 
 
-	/********************************************** PRUEBA2 ********************************************************************/
+	/********************************************** PRUEBA2 ********************************************************************
 	pcl::visualization::PCLVisualizer::Ptr viewer;
     viewer = normalsVis(cloud_nueva, cloud_normals);
 	while (!viewer->wasStopped ())
@@ -133,11 +139,19 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pfh.compute (*pfhs);
 	/********************************************** FIN PRUEBA3 ****************************************************************/
 
+	/********************************************* NUEVA CONVERSION SALIANS******************************************/
+
+	pcl::toPCLPointCloud2(*cloud_with_normals, cloud_filtered);
+   	sensor_msgs::PointCloud2 output;
+   	pcl_conversions::fromPCL(cloud_filtered, output);
+
+	/********************************************************************************************************/
+/*
 	// Convert to ROS data type
 	sensor_msgs::PointCloud2 output;
 	//pcl_conversions::fromPCL(cloud_filtered, output);   //Conversion antigua
 
-	/********************************************** PRUEBA1 ********************************************************************/
+	/********************************************** PRUEBA1 ********************************************************************
 	pcl::toROSMsg(*cloud_normals, output);    //Conversion nueva
 	//No da error e imprime el mensaje, pero no lo visualizo en el rviz
 	/********************************************** FIN PRUEBA1 ****************************************************************/
