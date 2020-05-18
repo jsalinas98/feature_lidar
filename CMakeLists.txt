@@ -134,6 +134,9 @@ include_directories(
   target_link_libraries(roscpp_pcl ${catkin_LIBRARIES})
   target_link_libraries(roscpp_pcl_rsd ${catkin_LIBRARIES})
   target_link_libraries(segmentation ${catkin_LIBRARIES})
+
+  add_executable (cylinder_segmentation src/cylinder_segmentation.cpp)
+  target_link_libraries (cylinder_segmentation ${catkin_LIBRARIES})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/feature_lidar.cpp
