@@ -5,7 +5,9 @@
 /*
  * PRUEBA1 -> Calcular normales
  * PRUEBA2 -> Visualizador 3D con las normales
- * PRUEBA3 -> Calcular histograma
+ * PRUEBA DESCRIPTORES -> Calcula y plotea diferentes descriptores:
+ *		-Funcionan: PFH, FPFH
+ *		-No funcionan: 3DSC, SHOT
  */
 
 // Include the ROS library
@@ -28,10 +30,6 @@
 #include <pcl/visualization/pcl_visualizer.h>
 //#include <pcl/visualization/cloud_viewer.h>
 /********************************************** FIN PRUEBA2 ****************************************************************/
-
-/********************************************** PRUEBA3 ********************************************************************
-#include <pcl/features/pfh.h>
-/********************************************** FIN PRUEBA3 ****************************************************************/
 
 /********************************************** PRUEBA DESCRIPTORES ********************************************************************/
 #include <pcl/features/pfh.h>
@@ -278,24 +276,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 		viewer->spinOnce (100);
 	}
 	/********************************************** FIN PRUEBA2 ****************************************************************/
-
-
-	/********************************************** PRUEBA3 ********************************************************************
-	// Create the PFH estimation class, and pass the input dataset+normals to it
-	pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
-	pfh.setInputCloud (cloud_nueva);
-	pfh.setInputNormals (cloud_normals);
-	
-	// Output datasets
-	pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
-
-	// Use all neighbors in a sphere of radius 5cm
-	// IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
-	pfh.setRadiusSearch (0.05);
-
-	// Compute the features
-	pfh.compute (*pfhs);
-	/********************************************** FIN PRUEBA3 ****************************************************************/
 
 	/********************************************* NUEVA CONVERSION SALIANS******************************************/
 
