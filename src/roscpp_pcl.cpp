@@ -83,16 +83,16 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 	/********************************************** PRUEBA1 ********************************************************************/
 	//Prueba Superficies Normales
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromPCLPointCloud2 (cloud_filtered, *cloud_nueva);
 
 	// Create the normal estimation class, and pass the input dataset to it
-	pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
+	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (cloud_nueva);
 
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
 	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
 	ne.setSearchMethod (tree);
 
 	// Output datasets
@@ -106,8 +106,8 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 /*****************************PRUEBA SALINAS CONCATENAR (aviso,no va)***********************************************/
 	// concatenate the XYZ and normal fields
-    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::_PointXYZRGBNormal>);
-    pcl::concatenateFields<pcl::PointXYZRGB, pcl::Normal, pcl::PointXYZRGBNormal>(*cloud_nueva, *cloud_normals, *cloud_with_normals);
+    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
+    pcl::concatenateFields<pcl::PointXYZ, pcl::Normal, pcl::PointNormal>(*cloud_nueva, *cloud_normals, *cloud_with_normals);
 /******************************************************************************************************/
 	/********************************************** FIN PRUEBA1 ****************************************************************/
 
