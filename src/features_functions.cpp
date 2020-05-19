@@ -141,3 +141,48 @@ void SHOT(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud
 	//*/
 }
 
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/vfh.h>
+#include <pcl/visualization/pcl_plotter.h>
+
+void VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+{
+	// Object for storing the VFH descriptor.
+	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptor(new pcl::PointCloud<pcl::VFHSignature308>);
+
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZ>);
+
+	// VFH estimation object.
+	pcl::VFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::VFHSignature308> vfh;
+	vfh.setInputCloud(cloud);
+	vfh.setInputNormals(cloud_normals);
+	vfh.setSearchMethod(kdtree);
+	// Optionally, we can normalize the bins of the resulting histogram,
+	// using the total number of points.
+	vfh.setNormalizeBins(true);
+	// Also, we can normalize the SDC with the maximum size found between
+	// the centroid and any of the cluster's points.
+	vfh.setNormalizeDistance(false);
+
+	vfh.compute(*descriptor);
+
+	// Plotter object.
+	pcl::visualization::PCLPlotter plotter;
+	// We need to set the size of the descriptor beforehand.
+	plotter.addFeatureHistogram(*descriptor, 308);
+
+	plotter.plot();
+}
+
+#include <pcl/keypoints/harris_3d.h>
+
+void KeyPoints(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
+	pcl::HarrisKeypoint3D <pcl::PointXYZ, pcl::PointXYZI> detector;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints (new pcl::PointCloud<pcl::PointXYZI>);
+	detector.setNonMaxSupression (true);
+	detector.setInputCloud (cloud);
+	detector.setThreshold (1e-6);
+	detector.compute (*keypoints);
+	pcl::console::print_highlight ("Detected %zd points in algunos s\n", keypoints->size ());
+}
