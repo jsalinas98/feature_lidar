@@ -275,7 +275,7 @@ void KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 	//*/
 }
 
-void KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
 	// Parameters for sift computation
 	const float min_scale = 0.01f;
@@ -314,7 +314,11 @@ void KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 
 	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
 
-	//*
+	// Copying the pointwithscale to pointxyz so as visualize the cloud
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
+	copyPointCloud(result, *cloud_temp);
+
+	/*
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
 	copyPointCloud(result, *cloud_temp);
@@ -332,6 +336,8 @@ void KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 		viewer.spinOnce ();
 	}
 	//*/
+
+	return cloud_temp;
 }
 
 // Incluir al usar SIFTKeyPointsFieldSelector para que seleccione segun la Z.
@@ -348,7 +354,7 @@ namespace pcl
     };
 }
 
-void KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {  
 	// Parameters for sift computation
 	const float min_scale = 0.005f;
@@ -368,11 +374,11 @@ void KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 
 	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
 
-	//*
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
 	copyPointCloud(result, *cloud_temp);
-
+	
+	/*
 	// Visualization of keypoints along with the original cloud
 	pcl::visualization::PCLVisualizer viewer("PCL Viewer");
 	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> keypoints_color_handler (cloud_temp, 0, 255, 0);
@@ -387,6 +393,8 @@ void KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 		viewer.spinOnce ();
 	}
 	//*/
+
+	return cloud_temp;
 }
 
 /********************************************** FIN PRUEBA KEYPOINTS *******************************************************************/
@@ -442,17 +450,20 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 	/********************************************** PRUEBA DESCRIPTORES ********************************************************************/
 
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_kp (new pcl::PointCloud<pcl::PointXYZ>);
+	//KeyPointsInd(cloud_nueva);
+	//cloud_kp=KeyPointsSiftNE(cloud_nueva);
+	cloud_kp=KeyPointsSiftZ(cloud_nueva);
+
 	//PFH(cloud_nueva, cloud_normals);
 	//FPFH(cloud_nueva, cloud_normals,9284);
 	//FPFH(cloud_nueva, cloud_normals,3505);
+    //VFH(cloud_nueva, cloud_normals);
+	
 	/* No van aun
 	SC_3D(cloud_nueva, cloud_normals);
 	SHOT(cloud_nueva, cloud_normals);
 	//*/
-    //VFH(cloud_nueva, cloud_normals);
-	//KeyPointsInd(cloud_nueva);
-	KeyPointsSiftNE(cloud_nueva);
-	KeyPointsSiftZ(cloud_nueva);
 
 	/********************************************** FIN PRUEBA DESCRIPTORES ****************************************************************/
 
@@ -470,9 +481,10 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 	/********************************************* NUEVA CONVERSION SALIANS******************************************/
 
-	pcl::toPCLPointCloud2(*cloud_with_normals, cloud_filtered);
+	pcl::toPCLPointCloud2(*cloud_kp, cloud_filtered);
    	sensor_msgs::PointCloud2 output;
    	pcl_conversions::fromPCL(cloud_filtered, output);
+	output.header.frame_id = "/velodyne";
 
 	/********************************************************************************************************/
 /*

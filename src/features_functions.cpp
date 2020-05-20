@@ -180,7 +180,7 @@ void VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/keypoints/harris_3d.h>
 
-void KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
 	pcl::HarrisKeypoint3D <pcl::PointXYZ, pcl::PointXYZI> detector;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints (new pcl::PointCloud<pcl::PointXYZI>);
@@ -213,7 +213,7 @@ void KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 #include <pcl/features/normal_3d.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-void KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
 	// Parameters for sift computation
 	const float min_scale = 0.01f;
@@ -252,6 +252,10 @@ void KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 
 	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
 
+	// Copying the pointwithscale to pointxyz so as visualize the cloud
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
+	copyPointCloud(result, *cloud_temp);
+
 	/*
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
@@ -270,6 +274,8 @@ void KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 		viewer.spinOnce ();
 	}
 	//*/
+
+	return cloud_temp;
 }
 
 #include <pcl/keypoints/sift_keypoint.h>
@@ -289,7 +295,7 @@ namespace pcl
     };
 }
 
-void KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {  
 	// Parameters for sift computation
 	const float min_scale = 0.005f;
@@ -309,11 +315,11 @@ void KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 
 	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
 
-	/*
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
 	copyPointCloud(result, *cloud_temp);
-
+	
+	/*
 	// Visualization of keypoints along with the original cloud
 	pcl::visualization::PCLVisualizer viewer("PCL Viewer");
 	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> keypoints_color_handler (cloud_temp, 0, 255, 0);
@@ -328,4 +334,6 @@ void KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 		viewer.spinOnce ();
 	}
 	//*/
+
+	return cloud_temp;
 }
