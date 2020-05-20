@@ -28,7 +28,7 @@
 
 /********************************************** PRUEBA2 ********************************************************************/
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/cloud_viewer.h>
+//#include <pcl/visualization/cloud_viewer.h>
 /********************************************** FIN PRUEBA2 ****************************************************************/
 
 /********************************************** PRUEBA DESCRIPTORES ********************************************************************/
@@ -46,13 +46,17 @@
 #include <pcl/keypoints/sift_keypoint.h>
 /********************************************** FIN PRUEBA KEYPOINTS ****************************************************************/
 
+#include <pcl/common/common.h>
+
 // Topics
 static const std::string IMAGE_TOPIC = "/velodyne_points";
 //static const std::string IMAGE_TOPIC = "/point_cloud"; //Para la vaca
 static const std::string PUBLISH_TOPIC = "/pcl/points";
+static const std::string PUBLISH_TOPIC2 = "/pcl/points2";
 
 // ROS Publisher
 ros::Publisher pub;
+ros::Publisher pub2;
 
 /********************************************** PRUEBA2 ********************************************************************
 pcl::visualization::PCLVisualizer::Ptr normalsVis (
@@ -99,13 +103,14 @@ void PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<
 
 	// Compute the features
 	pfh.compute (*descriptor);
-
+/*
 	// Plotter object.
 	pcl::visualization::PCLHistogramVisualizer viewer;
 	// We need to set the size of the descriptor beforehand.
 	viewer.addFeatureHistogram(*descriptor, 125);
 
 	viewer.spin();
+*/
 }
 
 
@@ -134,13 +139,14 @@ void FPFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud
 	// Imprime valor fpfh para el punto indicado por argumentos (int num)
 	pcl::FPFHSignature33 prueba = descriptor->points[num];
 	std::cout << prueba << std::endl;
-
+/*
 	// Plotter object.
 	pcl::visualization::PCLPlotter plotter;
 	// We need to set the size of the descriptor beforehand.
 	plotter.addFeatureHistogram(*descriptor, 33);
 
 	plotter.plot();
+*/
 }
 
 
@@ -233,13 +239,14 @@ void VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<
 	vfh.setNormalizeDistance(false);
 
 	vfh.compute(*descriptor);
-
+/*
 	// Plotter object.
 	pcl::visualization::PCLPlotter plotter;
 	// We need to set the size of the descriptor beforehand.
 	plotter.addFeatureHistogram(*descriptor, 308);
 
 	plotter.plot();
+*/
 }
 
 /********************************************** FIN PRUEBA DESCRIPTORES ****************************************************************/
@@ -409,18 +416,40 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Convert to PCL data type
 	pcl_conversions::toPCL(*cloud_msg, *cloud);
 
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pa_filtrar (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::fromPCLPointCloud2 (*cloudPtr, *cloud_pa_filtrar);
+
+	pcl::PointXYZ minPt, maxPt;
+  	pcl::getMinMax3D (*cloud_pa_filtrar, minPt, maxPt);
+
+
 	// Perform the actual filtering
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud (cloudPtr);
 	sor.setLeafSize (0.1, 0.1, 0.1);
 	sor.filter (cloud_filtered);
 
-	ROS_INFO_STREAM("Publica " << ros::this_node::getName());
+	// cascade the floor removal filter and define a container for floorRemoved	
+	pcl::PCLPointCloud2::Ptr floorRemoved (new pcl::PCLPointCloud2 ());
+	pcl::PCLPointCloud2ConstPtr cloud_filtered_ptr (&cloud_filtered);
+		
+	// define a PassThrough filter
+	pcl::PassThrough<pcl::PCLPointCloud2> pass;
+	// set input to cloudVoxel
+	pass.setInputCloud(cloud_filtered_ptr);
+	// filter along z-axis
+	pass.setFilterFieldName("z");
+	// set z-limits
+	pass.setFilterLimits(minPt.z+2, maxPt.z);
+	pass.filter(*floorRemoved);
+
+	std::cout << "Min z: " << minPt.z+2 << std::endl;
+	std::cout << "Max z: " << maxPt.z << std::endl;
 
 	/********************************************** PRUEBA1 ********************************************************************/
 	//Prueba Superficies Normales
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_nueva (new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::fromPCLPointCloud2 (cloud_filtered, *cloud_nueva);
+	pcl::fromPCLPointCloud2 (*floorRemoved, *cloud_nueva);
 
 	// Create the normal estimation class, and pass the input dataset to it
 	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
@@ -486,6 +515,10 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
    	pcl_conversions::fromPCL(cloud_filtered, output);
 	output.header.frame_id = "/velodyne";
 
+	//pcl::toPCLPointCloud2(*floorRemoved, cloud_filtered);
+   	sensor_msgs::PointCloud2 output2;
+   	pcl_conversions::fromPCL(*floorRemoved, output2);
+
 	/********************************************************************************************************/
 /*
 	// Convert to ROS data type
@@ -499,6 +532,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 	// Publish the data
 	pub.publish (output);
+	pub2.publish (output2);
 }
 
 int main (int argc, char** argv)
@@ -515,6 +549,7 @@ int main (int argc, char** argv)
 
 	// Create a ROS publisher to PUBLISH_TOPIC with a queue_size of 1
 	pub = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC, 1);
+	pub2 = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC2, 1);
 
 	// Spin
 	ros::spin();
