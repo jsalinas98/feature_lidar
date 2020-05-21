@@ -1,14 +1,4 @@
-/*
-* PCL Example using ROS and CPP
-*/
-
-/*
- * PRUEBA1 -> Calcular normales
- * PRUEBA2 -> Visualizador 3D con las normales
- * PRUEBA DESCRIPTORES -> Calcula y plotea diferentes descriptores:
- *		-Funcionan: PFH, FPFH
- *		-No funcionan: 3DSC, SHOT
- */
+/**************************LIBRARIES**************************/
 
 // Include the ROS library
 #include <ros/ros.h>
@@ -32,7 +22,6 @@
 
 //Include Visualizer and Plotter
 #include <pcl/visualization/pcl_visualizer.h>
-//#include <pcl/visualization/cloud_viewer.h> Esta se va a borra fasi tamien
 #include <pcl/visualization/histogram_visualizer.h>
 #include <pcl/visualization/pcl_plotter.h>
 
@@ -42,15 +31,18 @@
 
 #include <pcl/common/common.h>
 
+/**************************DECLARATIONS***********************/
 // Topics
 static const std::string IMAGE_TOPIC = "/velodyne_points";
-//static const std::string IMAGE_TOPIC = "/point_cloud"; //Para la vaca
 static const std::string PUBLISH_TOPIC = "/pcl/points";
 static const std::string PUBLISH_TOPIC2 = "/pcl/points2";
 
 // ROS Publisher
-ros::Publisher pub;
-ros::Publisher pub2;
+ros::Publisher pubF;
+ros::Publisher pubKP;
+
+// ROS Subscriber
+ros::Subscriber sub;
 
 pcl::visualization::PCLVisualizer::Ptr normalsVis (pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
 {
@@ -73,6 +65,29 @@ pcl::visualization::PCLVisualizer::Ptr visualizer (pcl::PointCloud<pcl::PointXYZ
 	viewer->addCoordinateSystem (0.5); //Muestra los ejes
 	viewer->initCameraParameters ();  //Inicia la vista en el origen
 	return (viewer);
+}
+
+pcl::PointCloud<pcl::Normal>::Ptr Normals(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
+	// Create the normal estimation class, and pass the input dataset to it
+	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+	ne.setInputCloud (cloud);
+
+	// Create an empty kdtree representation, and pass it to the normal estimation object.
+	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+	ne.setSearchMethod (tree);
+
+	// Output datasets
+	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+
+	// Use all neighbors in a sphere of radius 3cm
+	ne.setRadiusSearch (0.03);
+
+	// Compute the features
+	ne.compute (*cloud_normals);
+
+	return cloud_normals;
 }
 
 pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
@@ -141,78 +156,6 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::Point
 	return descriptor;
 }
 
-//NO VA
-void SC_3D(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
-{
-	// 3DSC estimation object.
-	pcl::ShapeContext3DEstimation<pcl::PointXYZ, pcl::Normal, pcl::ShapeContext1980> sc3d;
-	sc3d.setInputCloud (cloud);
-	sc3d.setInputNormals (cloud_normals);
-	
-	// Create an empty kdtree representation, and pass it to the normal estimation object.
-	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-	sc3d.setSearchMethod (tree);
-
-	// Object for storing the 3DSC descriptors for each point.
-	pcl::PointCloud<pcl::ShapeContext1980>::Ptr descriptor(new pcl::PointCloud<pcl::ShapeContext1980>());
-	
-	// Search radius, to look for neighbors. It will also be the radius of the support sphere.
-	sc3d.setRadiusSearch(0.05);
-	// The minimal radius value for the search sphere, to avoid being too sensitive
-	// in bins close to the center of the sphere.
-	sc3d.setMinimalRadius(0.05 / 10.0);
-	// Radius used to compute the local point density for the neighbors
-	// (the density is the number of points within that radius).
-	sc3d.setPointDensityRadius(0.05 / 5.0);
-
-	// Compute the features
-	sc3d.compute (*descriptor);
-
-	/* No va el plot de esto
-	// Plotter object.
-	pcl::visualization::PCLPlotter plotter;
-	// We need to set the size of the descriptor beforehand.
-	plotter.addFeatureHistogram(*descriptor, 1980);
-
-	plotter.plot();
-	//*/
-}
-
-//NO VA
-void SHOT(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
-{
-	// SHOT estimation object.
-	pcl::SHOTEstimation<pcl::PointXYZ, pcl::Normal, pcl::SHOT352> shot;
-	shot.setInputCloud (cloud);
-	shot.setInputNormals (cloud_normals);
-	
-	// Create an empty kdtree representation, and pass it to the normal estimation object.
-	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-	shot.setSearchMethod (tree);
-
-	// Object for storing the SHOT descriptors for each point.
-	pcl::PointCloud<pcl::SHOT352>::Ptr descriptor(new pcl::PointCloud<pcl::SHOT352>());
-
-	// The radius that defines which of the keypoint's neighbors are described.
-	// If too large, there may be clutter, and if too small, not enough points may be found.
-	shot.setRadiusSearch(0.02);
-
-	// Compute the features
-	shot.compute (*descriptor);
-
-	/* No va el plot de esto
-	// Plotter object.
-	pcl::visualization::PCLPlotter plotter;
-	// We need to set the size of the descriptor beforehand.
-	plotter.addFeatureHistogram(*descriptor, 352);
-
-	plotter.plot();
-	//*/
-}
-
-
 pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
 	// Object for storing the VFH descriptor.
@@ -258,18 +201,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsInd(const pcl::PointCloud<pcl::Poi
 
 	detector.compute (*keypoints);
 	pcl::console::print_highlight ("Detected %zd points in algunos s\n", keypoints->size ());
-/*	
-	pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-	viewer->setBackgroundColor (0, 0, 0);
-	viewer->addPointCloud<pcl::PointXYZI> (keypoints, "sample cloud");
-	//viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");  // Edita la forma de ver los puntos
-	viewer->addCoordinateSystem (0.5); //Muestra los ejes
-	viewer->initCameraParameters ();  //Inicia la vista en el origen
-	while (!viewer->wasStopped ())
-	{
-		viewer->spinOnce (100);
-	}
-*/
+
 	return keypoints;
 }
 
@@ -316,20 +248,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 	//Probar a cambiar el tipo de salida para no hacer esto
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
 	copyPointCloud(result, *cloud_temp);
-/*
-	pcl::visualization::PCLVisualizer viewer("PCL Viewer");
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> keypoints_color_handler (cloud_temp, 0, 255, 0);
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_color_handler (cloud, 255, 0, 0);
-	viewer.setBackgroundColor( 0.0, 0.0, 0.0 );
-	viewer.addPointCloud(cloud, cloud_color_handler, "cloud");
-	viewer.addPointCloud(cloud_temp, keypoints_color_handler, "keypoints");
-	viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 7, "keypoints");
 
-	while(!viewer.wasStopped ())
-	{
-		viewer.spinOnce ();
-	}
-*/
 	return cloud_temp;
 }
 
@@ -392,67 +311,56 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::P
 
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
-	// Container for original & filtered data
-
+	// Container for original data
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg(*cloud_msg, *cloud);
 
-	pcl::PointXYZ minPt, maxPt;
-  	pcl::getMinMax3D (*cloud, minPt, maxPt);
-
+	// VoxedGrid Filter
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
 
-	// Perform the actual filtering
 	pcl::VoxelGrid<pcl::PointXYZ> sor;
 	sor.setInputCloud (cloud);
 	sor.setLeafSize (0.1, 0.1, 0.1);
 	sor.filter (*cloud_filtered);
 
-	// cascade the floor removal filter and define a container for floorRemoved	
-	pcl::PointCloud<pcl::PointXYZ>::Ptr floorRemoved (new pcl::PointCloud<pcl::PointXYZ> ());
-		
-	// define a PassThrough filter
+	// PassThrough Filter in X
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered2(new pcl::PointCloud<pcl::PointXYZ>);
+
 	pcl::PassThrough<pcl::PointXYZ> pass;
 	pass.setInputCloud(cloud_filtered);
-	pass.setFilterFieldName("z");
-	pass.setFilterLimits(minPt.z+2, maxPt.z);
-	pass.filter(*floorRemoved);
+	pass.setFilterFieldName("x");
+	pass.setFilterLimits(-10, 10);
+	pass.filter(*cloud_filtered2);
 
-	//Prueba Superficies Normales
-	// Create the normal estimation class, and pass the input dataset to it
-	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-	ne.setInputCloud (floorRemoved);
+	// PassThrough Filter in Y
+	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered3(new pcl::PointCloud<pcl::PointXYZ>);
 
-	// Create an empty kdtree representation, and pass it to the normal estimation object.
-	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-	ne.setSearchMethod (tree);
+	pass.setInputCloud(cloud_filtered2);
+	pass.setFilterFieldName("y");
+	pass.setFilterLimits(-10, 16);
+	pass.filter(*cloud_filtered3);
 
-	// Output datasets
-	pcl::PointCloud<pcl::Normal>::Ptr cloud_normals (new pcl::PointCloud<pcl::Normal>);
+	//Obtengo KeyPoints por distintos métodos
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPHarris(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftNE(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftZ(new pcl::PointCloud<pcl::PointXYZI>);
 
-	// Use all neighbors in a sphere of radius 3cm
-	ne.setRadiusSearch (0.03);
+	cloud_KPHarris=KeyPointsInd(cloud_filtered3);
+	cloud_KPSiftNE=KeyPointsSiftNE(cloud_filtered3);
+	cloud_KPSiftZ=KeyPointsSiftZ(cloud_filtered3);
 
-	// Compute the features
-	ne.compute (*cloud_normals);
+	//Preparo como mensajes la nube filtrada y los KeyPoints que quiero visualizar
+   	sensor_msgs::PointCloud2 outputF;
+   	pcl::toROSMsg(*cloud_filtered3, outputF);
+	outputF.header.frame_id = "/velodyne";
 
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_kp (new pcl::PointCloud<pcl::PointXYZI>);
-	//cloud_kp=KeyPointsInd(floorRemoved);
-	cloud_kp=KeyPointsSiftNE(floorRemoved);
-	//cloud_kp=KeyPointsSiftZ(floorRemoved);
-
-   	sensor_msgs::PointCloud2 output;
-   	pcl::toROSMsg(*floorRemoved, output);
-	output.header.frame_id = "/velodyne";
-
-   	sensor_msgs::PointCloud2 output2;
-   	pcl::toROSMsg(*cloud_kp, output2);
-	output2.header.frame_id = "/velodyne";
+   	sensor_msgs::PointCloud2 outputKP;
+   	pcl::toROSMsg(*cloud_KPHarris, outputKP);
+	outputKP.header.frame_id = "/velodyne";
 
 	// Publish the data
-	pub.publish (output);
-	pub2.publish (output2);
+	pubF.publish (outputF);
+	pubKP.publish (outputKP);
 }
 
 int main (int argc, char** argv)
@@ -465,11 +373,11 @@ int main (int argc, char** argv)
 	ROS_INFO_STREAM("Hello from ROS Node: " << ros::this_node::getName());
 
 	// Create a ROS Subscriber to IMAGE_TOPIC with a queue_size of 1 and a callback function to cloud_cb
-	ros::Subscriber sub = nh.subscribe(IMAGE_TOPIC, 1, cloud_cb);
+	sub = nh.subscribe(IMAGE_TOPIC, 1, cloud_cb);
 
 	// Create a ROS publisher to PUBLISH_TOPIC with a queue_size of 1
-	pub = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC, 1);
-	pub2 = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC2, 1);
+	pubF = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC, 1);
+	pubKP = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC2, 1);
 
 	// Spin
 	ros::spin();
