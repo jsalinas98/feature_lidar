@@ -140,6 +140,9 @@ include_directories(
 
   #add_executable (visualizer src/visualizer.cpp)
   #target_link_libraries (visualizer ${catkin_LIBRARIES})
+
+  add_executable (correspondences src/correspondences.cpp)
+  target_link_libraries (correspondences ${catkin_LIBRARIES})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/feature_lidar.cpp
