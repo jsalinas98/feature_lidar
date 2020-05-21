@@ -8,7 +8,7 @@
 #include <pcl_conversions/pcl_conversions.h> //toPCL
 #include <pcl/common/common.h> //getMinMax3D
 #include <pcl/filters/voxel_grid.h> //VoxelGrid
-//#include <pcl/filters/passthrough.h> //PassThrough
+#include <pcl/filters/passthrough.h> //PassThrough
 
 // Include PointCloud2 message
 #include <sensor_msgs/PointCloud2.h>
@@ -35,13 +35,8 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pcl_conversions::toPCL(*cloud_msg, *cloud_PCL2);
 
 
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_XYZI (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
 	pcl::fromPCLPointCloud2 (*cloud_PLC2_Ptr, *cloud_XYZI);
-
-	pcl::PointXYZ minPt, maxPt;
-  	pcl::getMinMax3D (*cloud_XYZI, minPt, maxPt);
-	std::cout << "Min z: " << minPt.z+1 << std::endl;
-	std::cout << "Max z: " << maxPt.z << std::endl;
 
 	// Perform the actual filtering
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
@@ -50,31 +45,35 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	sor.filter (cloud_f_PCL2);
 
 	// Paso la cloud filtrada 1 a tipo PointCloud...PointXYZI
-	//pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
-	//pcl::fromPCLPointCloud2 (cloud_f_PCL2, *cloud_f_XYZI);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::fromPCLPointCloud2 (cloud_f_PCL2, *cloud_f_XYZI);
 
-/*
+	pcl::PointXYZI minPt, maxPt;
+  	pcl::getMinMax3D (*cloud_f_XYZI, minPt, maxPt);
+	std::cout << "Min z: " << minPt.z+1.2 << std::endl;
+	std::cout << "Max z: " << maxPt.z << std::endl;
+
 	// cascade the floor removal filter and define a container for floorRemoved	
 	pcl::PCLPointCloud2::Ptr cloud_f2_PCL2 (new pcl::PCLPointCloud2 ());
-	pcl::PCLPointCloud2ConstPtr cloud_f2_Ptr (&cloud_f_PCL2);
-		
+	*cloud_PCL2 = cloud_f_PCL2;
+
 	// define a PassThrough filter
 	pcl::PassThrough<pcl::PCLPointCloud2> pass;
-	pass.setInputCloud(cloud_f2_Ptr);
+	pass.setInputCloud(cloud_PLC2_Ptr);
 	// filter along z-axis
 	pass.setFilterFieldName("z");
 	// set z-limits
-	pass.setFilterLimits(minPt.z+2, maxPt.z);
+	pass.setFilterLimits(minPt.z+1.2, maxPt.z);
 	pass.filter(*cloud_f2_PCL2);
 
 	// Paso la cloud filtrada 2 a tipo PointCloud...PointXYZI
-	//pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f2_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
-	//pcl::fromPCLPointCloud2 (*cloud_f2_PCL2, *cloud_f2_XYZI);
-*/
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f2_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::fromPCLPointCloud2 (*cloud_f2_PCL2, *cloud_f2_XYZI);
+
 
    	sensor_msgs::PointCloud2 output;
    	//pcl_conversions::fromPCL(cloud_PC, output); // Si la salida es tipo plc::PLCPointCloud2
-   	//pcl::toROSMsg(*cloud_XYZI, output); // Si la salida es tipo plc::PintCloud
+   	pcl::toROSMsg(*cloud_f2_XYZI, output); // Si la salida es tipo plc::PintCloud
 	output.header.frame_id = "/velodyne";
 
 	// Publish the data
