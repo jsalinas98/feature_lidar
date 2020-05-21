@@ -12,6 +12,7 @@
 
 // Include pcl for keypoints
 #include <pcl/keypoints/sift_keypoint.h>
+#include <pcl/features/normal_3d.h>
 
 // Include PointCloud2 message
 #include <sensor_msgs/PointCloud2.h>
@@ -46,7 +47,6 @@ namespace pcl
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {  
-
 	// Parameters for sift computation
 	const float min_scale = 0.05f;
 	const int n_octaves = 10;
@@ -72,6 +72,51 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::P
 	return cloud_temp;
 }
 
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+{
+	// Parameters for sift computation
+	const float min_scale = 0.01f;
+	const int n_octaves = 3;
+	const int n_scales_per_octave = 4;
+	const float min_contrast = 0.001f;
+
+	// Estimate the normals of the cloud_xyz
+	pcl::NormalEstimation<pcl::PointXYZI, pcl::PointNormal> ne;
+	pcl::PointCloud<pcl::PointNormal>::Ptr cloud_normals (new pcl::PointCloud<pcl::PointNormal>);
+	pcl::search::KdTree<pcl::PointXYZI>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZI>());
+	ne.setInputCloud(cloud);
+	ne.setSearchMethod(kdtree);
+	ne.setRadiusSearch(0.2);
+	ne.compute(*cloud_normals);
+
+
+	// Copy the xyz info from cloud_xyz and add it to cloud_normals as the xyz field in PointNormals estimation is zero
+	for(std::size_t i = 0; i<cloud_normals->points.size(); ++i)
+	{
+		cloud_normals->points[i].x = cloud->points[i].x;
+		cloud_normals->points[i].y = cloud->points[i].y;
+		cloud_normals->points[i].z = cloud->points[i].z;
+	}
+
+	// Estimate the sift interest points using normals values from xyz as the Intensity variants
+	pcl::SIFTKeypoint<pcl::PointNormal, pcl::PointWithScale> sift;
+	pcl::PointCloud<pcl::PointWithScale> result;
+	pcl::search::KdTree<pcl::PointNormal>::Ptr kdtree_n(new pcl::search::KdTree<pcl::PointNormal> ());
+	sift.setSearchMethod(kdtree_n);
+	sift.setScales(min_scale, n_octaves, n_scales_per_octave);
+	sift.setMinimumContrast(min_contrast);
+	sift.setInputCloud(cloud_normals);
+	sift.compute(result);
+
+	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
+
+	// Copying the pointwithscale to pointxyz so as visualize the cloud
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
+	copyPointCloud(result, *cloud_temp);
+
+	return cloud_temp;
+}
 
 /**************************MSGS ANSWER*************************/
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
@@ -125,6 +170,10 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Obtengo KeyPoints segun SIFT en Z
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftZ_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
 	cloud_KPSiftZ_XYZI=KeyPointsSiftZ(cloud_f3_XYZI);
+
+	// Obtengo KeyPoints segun SIFT en Z
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftNE_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	//cloud_KPSiftNE_XYZI=KeyPointsSiftNE(cloud_f3_XYZI);
 
 	// Prubish the data filtered
    	sensor_msgs::PointCloud2 outputF;
