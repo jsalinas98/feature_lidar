@@ -57,7 +57,18 @@ static const std::string PUBLISH_TOPIC2 = "/pcl/points2";
 // ROS Publisher
 ros::Publisher pub;
 ros::Publisher pub2;
+/*************************************LO NUEVO INSTANTES ANTERIORES*************************************/
+//Variables globales
+pcl::PointCloud<pcl::PointXYZ>::Ptr keypoints_anterior (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZ>::Ptr keypoints_actuales (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PFHSignature125>::Ptr descriptorPFH_anterior(new pcl::PointCloud<pcl::PFHSignature125>());
+pcl::PointCloud<pcl::PFHSignature125>::Ptr descriptorPFH_actual(new pcl::PointCloud<pcl::PFHSignature125>());
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorFPHF_anterior(new pcl::PointCloud<pcl::FPFHSignature33>());
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorFPHF_actuales(new pcl::PointCloud<pcl::FPFHSignature33>());
+pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptorVFH_anterior(new pcl::PointCloud<pcl::VFHSignature308>);
+pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptorVFH_actuales(new pcl::PointCloud<pcl::VFHSignature308>);
 
+/********************************************************************************************************/
 /********************************************** PRUEBA2 ********************************************************************
 pcl::visualization::PCLVisualizer::Ptr normalsVis (
     pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
@@ -82,7 +93,7 @@ pcl::visualization::PCLVisualizer::Ptr normalsVis (
 
 /********************************************** PRUEBA DESCRIPTORES ********************************************************************/
 
-void PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
 	// PFH estimation object.
 	pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
@@ -114,7 +125,7 @@ void PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<
 }
 
 
-void FPFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, int num)
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, int num)
 {
 	// FPFH estimation object.
 	pcl::FPFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::FPFHSignature33> fpfh;
@@ -219,7 +230,7 @@ void SHOT(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud
 	//*/
 }
 
-void VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
 	// Object for storing the VFH descriptor.
 	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptor(new pcl::PointCloud<pcl::VFHSignature308>);
@@ -478,22 +489,36 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 
 	/********************************************** PRUEBA DESCRIPTORES ********************************************************************/
+    /**********************************************LO NUEVO CORRESPONDENCIA****************************************************/
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_kp (new pcl::PointCloud<pcl::PointXYZ>);
 	//KeyPointsInd(cloud_nueva);
 	//cloud_kp=KeyPointsSiftNE(cloud_nueva);
 	cloud_kp=KeyPointsSiftZ(cloud_nueva);
 
-	//PFH(cloud_nueva, cloud_normals);
-	//FPFH(cloud_nueva, cloud_normals,9284);
-	//FPFH(cloud_nueva, cloud_normals,3505);
-    //VFH(cloud_nueva, cloud_normals);
+	//DescriptorPFH_actual = PFH(cloud_nueva, cloud_normals);
+	//DescriptorFPFH_actual = FPFH(cloud_nueva, cloud_normals,9284);
+	//DescriptorFPFH_actual = FPFH(cloud_nueva, cloud_normals,3505);
+    //DescriptorVFH_actual = VFH(cloud_nueva, cloud_normals);
 	
 	/* No van aun
 	SC_3D(cloud_nueva, cloud_normals);
 	SHOT(cloud_nueva, cloud_normals);
 	//*/
 
+	// Aquí cambiar las variables según se vaya a probar uno u otro
+	if (DescriptorPFH_anterior != null){
+		// Aquí las fucioines para la correspondencia, q tendrán q devolver el dato de la correspondencia
+		// Pasando por argumento las keypoints y features actales y anteriores
+	}
+
+	DescriptorPFH_anterior = DescriptorPFH_actual;
+	//DescriptorFPFH_anterior = DescriptorPFH_actual;
+	//DescriptorVFH_anterior = DescriptorVFH_actual;
+
+	keypoints_anterior = cloud_kp;
+
+	/***************************************************************************************************************************/
 	/********************************************** FIN PRUEBA DESCRIPTORES ****************************************************************/
 
 	/********************************************** FIN PRUEBA1 ****************************************************************/
