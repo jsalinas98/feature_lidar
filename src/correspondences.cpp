@@ -218,6 +218,73 @@ int main(int, char** argv)
     pcl::transformPointCloud(*source_cloud, *transformed_source, transform);
     savePCDFileASCII("Transformed.pcd", (*transformed_source));
 
+
+    // viewer.setBackgroundColor (0, 0, 0);
+    viewer.setBackgroundColor(1, 1, 1);
+    viewer.resetCamera();
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> handler_source_cloud(transformed_source, 150, 80, 80);
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> handler_source_keypoints(source_keypoints, 255, 0, 0);
+
+    viewer.addPointCloud<pcl::PointXYZ>(transformed_source, handler_source_cloud, "source_cloud");
+    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "source_cloud");
+    viewer.addPointCloud<pcl::PointXYZ>(source_keypoints, handler_source_keypoints, "source_keypoints");
+
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> handler_target_cloud(target_cloud, 80, 150, 80);
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> handler_target_keypoints(target_keypoints, 0, 255, 0);
+
+    viewer.addPointCloud<pcl::PointXYZ>(target_cloud, handler_target_cloud, "target_cloud");
+    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "target_cloud");
+    viewer.addPointCloud<pcl::PointXYZ>(target_keypoints, handler_target_keypoints, "target_keypoints");
+    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "target_keypoints");
+    viewer.addCorrespondences<pcl::PointXYZ>(source_keypoints, target_keypoints, *correspondences, 1, "correspondences");
+
+    pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+    icp.setInputSource(transformed_source);
+    icp.setInputTarget(target_cloud);
+    icp.align(*final_output);
+    std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+    icp.getFitnessScore() << std::endl;
+    std::cout << icp.getFinalTransformation() << std::endl;
+
+
+    ICPView.addPointCloud<pcl::PointXYZ>(final_output, handler_source_cloud, "Final_cloud");
+    ICPView.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "source_keypoints");
+    while (!viewer.wasStopped())
+    {
+
+        viewer.spinOnce(100);
+        boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+    }
+    while (!ICPView.wasStopped())
+    {
+
+        ICPView.spinOnce(100);
+        boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+    }
+    /*
+    // Setup the SHOT features
+    typedef pcl::SHOT352 ShotFeature;
+    pcl::SHOTEstimation<pcl::PointXYZ, pcl::Normal, ShotFeature> shotEstimation;
+
+    shotEstimation.setInputCloud(model);
+    shotEstimation.setInputNormals(normals);
+    shotEstimation.setIndices(keypoint_indices);
+
+    // Use the same KdTree from the normal estimation
+    shotEstimation.setSearchMethod(tree);
+    pcl::PointCloud<ShotFeature>::Ptr shotFeatures(new pcl::PointCloud<ShotFeature>);
+    //spinImageEstimation.setRadiusSearch (0.2);
+    shotEstimation.setKSearch(10);
+
+    // Actually compute the spin images
+    shotEstimation.compute(*shotFeatures);
+    std::cout << "SHOT output points.size (): " << shotFeatures->points.size() << std::endl;
+
+    // Display and retrieve the SHOT descriptor for the first point.
+    ShotFeature descriptor = shotFeatures->points[0];
+    std::cout << descriptor << std::endl;
+    */
+
     return 0;
 
 }
