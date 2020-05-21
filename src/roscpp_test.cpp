@@ -15,6 +15,7 @@
 // Include pcl for keypoints
 #include <pcl/keypoints/sift_keypoint.h>
 #include <pcl/keypoints/iss_3d.h>
+#include <pcl/keypoints/harris_3d.h>
 
 // Include pcl features
 #include <pcl/features/normal_3d.h>
@@ -37,7 +38,7 @@ ros::Subscriber sub;
 
 /*****************************KEYPOINTS FUNCTIONS************************************************/
 // Incluir al usar SIFTKeyPointsFieldSelector para que seleccione segun la Z.
-namespace pcl
+/*namespace pcl
 {
   template<>
     struct SIFTKeypointFieldSelector<PointXYZI>
@@ -49,7 +50,7 @@ namespace pcl
       }
     };
 }
-
+*/
 pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {  
 	// Parameters for sift computation
@@ -126,7 +127,6 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 
 pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsISS(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
-    //double cloud_resolution = computeCloudResolution(cloud);
 
     pcl::ISSKeypoint3D<pcl::PointXYZI, pcl::PointXYZI> iss_detector;
     pcl::PointCloud<pcl::PointXYZI>::Ptr result (new pcl::PointCloud<pcl::PointXYZI>());
@@ -147,6 +147,29 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsISS(const pcl::PointCloud<pcl::Poi
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
 	copyPointCloud(*result, *cloud_temp);
+
+	return cloud_temp;
+}
+
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsHarris(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+{
+	pcl::HarrisKeypoint3D <pcl::PointXYZI, pcl::PointXYZI> detector;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints (new pcl::PointCloud<pcl::PointXYZI>);
+
+	detector.setNonMaxSupression (true);
+	detector.setInputCloud (cloud);
+	detector.setThreshold (1e-11);
+	detector.setMethod(pcl::HarrisKeypoint3D<pcl::PointXYZI,pcl::PointXYZI>::HARRIS); 
+	detector.setRefine(false);
+	detector.setRadius(0.5);
+	detector.compute (*keypoints);
+
+	std::cout << "No of Harris Keypoints in the result are " << keypoints->points.size () << std::endl;
+
+	// Copying the pointwithscale to pointxyz so as visualize the cloud
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
+	copyPointCloud(*keypoints, *cloud_temp);
 
 	return cloud_temp;
 }
@@ -218,6 +241,10 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Obtengo KeyPoints segun ISS
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPISS_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
 	cloud_KPISS_XYZI=KeyPointsISS(cloud_f3_XYZI);
+
+	// Obtengo KeyPoints segun HARRIS
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPHARRIS_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	cloud_KPHARRIS_XYZI=KeyPointsHarris(cloud_f3_XYZI);
 
 	// Prubish the data KP
    	sensor_msgs::PointCloud2 outputKP;
