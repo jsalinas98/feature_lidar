@@ -75,7 +75,7 @@ pcl::visualization::PCLVisualizer::Ptr visualizer (pcl::PointCloud<pcl::PointXYZ
 	return (viewer);
 }
 
-void PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
 	// PFH estimation object.
 	pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
@@ -96,18 +96,19 @@ void PFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<
 
 	// Compute the features
 	pfh.compute (*descriptor);
-
+/*
 	// Plotter object.
 	pcl::visualization::PCLHistogramVisualizer Hviewer;
 	// We need to set the size of the descriptor beforehand.
 	Hviewer.addFeatureHistogram(*descriptor, 125);
 
 	Hviewer.spin();
-
+*/
+	return descriptor;
 }
 
 
-void FPFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
 	// FPFH estimation object.
 	pcl::FPFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::FPFHSignature33> fpfh;
@@ -129,14 +130,15 @@ void FPFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud
 	// Compute the features
 	fpfh.compute (*descriptor);
 
-
+/*
 	// Plotter object.
 	pcl::visualization::PCLPlotter plotter;
 	// We need to set the size of the descriptor beforehand.
 	plotter.addFeatureHistogram(*descriptor, 33);
 
 	plotter.plot();
-
+*/
+	return descriptor;
 }
 
 //NO VA
@@ -211,7 +213,7 @@ void SHOT(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud
 }
 
 
-void VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
 {
 	// Object for storing the VFH descriptor.
 	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptor(new pcl::PointCloud<pcl::VFHSignature308>);
@@ -231,17 +233,18 @@ void VFH(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, const pcl::PointCloud<
 	vfh.setNormalizeDistance(false);
 
 	vfh.compute(*descriptor);
-
+/*
 	// Plotter object.
 	pcl::visualization::PCLPlotter plotter;
 	// We need to set the size of the descriptor beforehand.
 	plotter.addFeatureHistogram(*descriptor, 308);
 
 	plotter.plot();
-
+*/
+	return descriptor;
 }
 
-void KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
 	pcl::HarrisKeypoint3D <pcl::PointXYZ, pcl::PointXYZI> detector;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints (new pcl::PointCloud<pcl::PointXYZI>);
@@ -267,9 +270,10 @@ void KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 		viewer->spinOnce (100);
 	}
 */
+	return keypoints;
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
 	// Parameters for sift computation
 	const float min_scale = 0.01f;
@@ -310,7 +314,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::P
 
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	//Probar a cambiar el tipo de salida para no hacer esto
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
 	copyPointCloud(result, *cloud_temp);
 /*
 	pcl::visualization::PCLVisualizer viewer("PCL Viewer");
@@ -343,7 +347,7 @@ namespace pcl
     };
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {  
 	// Parameters for sift computation
 	const float min_scale = 0.005f;
@@ -364,7 +368,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::Po
 	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
 
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
 	copyPointCloud(result, *cloud_temp);
 
 /*
@@ -414,12 +418,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pass.setFilterLimits(minPt.z+2, maxPt.z);
 	pass.filter(*floorRemoved);
 
-	std::cout << "Min z: " << minPt.z+2 << std::endl;
-	std::cout << "Max z: " << maxPt.z << std::endl;
-
-	/********************************************** PRUEBA1 ********************************************************************/
 	//Prueba Superficies Normales
-
 	// Create the normal estimation class, and pass the input dataset to it
 	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (floorRemoved);
@@ -438,14 +437,8 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Compute the features
 	ne.compute (*cloud_normals);
 
-	/*************************************** PRUEBA SALINAS CONCATENAR SE BORRA FASI ***********************************************
-	// concatenate the XYZ and normal fields
-	pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-	pcl::concatenateFields<pcl::PointXYZ, pcl::Normal, pcl::PointNormal>(*cloud_nueva, *cloud_normals, *cloud_with_normals);
-	/*****************************************************************************************************************/
-
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_kp (new pcl::PointCloud<pcl::PointXYZ>);
-	//KeyPointsInd(floorRemoved);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_kp (new pcl::PointCloud<pcl::PointXYZI>);
+	//cloud_kp=KeyPointsInd(floorRemoved);
 	cloud_kp=KeyPointsSiftNE(floorRemoved);
 	//cloud_kp=KeyPointsSiftZ(floorRemoved);
 
