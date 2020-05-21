@@ -2,16 +2,21 @@
 // Include the ROS library
 #include <ros/ros.h>
 
-// Include pcl
+// Include pcl types and conversions
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h> //toPCL
+
+// Inlcude pcl filters
 #include <pcl/common/common.h> //getMinMax3D
 #include <pcl/filters/voxel_grid.h> //VoxelGrid
 #include <pcl/filters/passthrough.h> //PassThrough
 
 // Include pcl for keypoints
 #include <pcl/keypoints/sift_keypoint.h>
+#include <pcl/keypoints/iss_3d.h>
+
+// Include pcl features
 #include <pcl/features/normal_3d.h>
 
 // Include PointCloud2 message
@@ -63,7 +68,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::P
 	sift.setInputCloud(cloud);
 	sift.compute(result);
 
-	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
+	std::cout << "No of SIFT Z Keypoints in the result are " << result.points.size () << std::endl;
 
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
@@ -79,7 +84,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 	const float min_scale = 0.01f;
 	const int n_octaves = 3;
 	const int n_scales_per_octave = 4;
-	const float min_contrast = 0.001f;
+	const float min_contrast = 0.01f;
 
 	// Estimate the normals of the cloud_xyz
 	pcl::NormalEstimation<pcl::PointXYZI, pcl::PointNormal> ne;
@@ -109,7 +114,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 	sift.setInputCloud(cloud_normals);
 	sift.compute(result);
 
-	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
+	std::cout << "No of SIFT NE Keypoints in the result are " << result.points.size () << std::endl;
 
 	// Copying the pointwithscale to pointxyz so as visualize the cloud
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
@@ -118,73 +123,104 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 	return cloud_temp;
 }
 
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsISS(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+{
+    //double cloud_resolution = computeCloudResolution(cloud);
+
+    pcl::ISSKeypoint3D<pcl::PointXYZI, pcl::PointXYZI> iss_detector;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr result (new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::search::KdTree<pcl::PointXYZI>::Ptr kdtree (new pcl::search::KdTree<pcl::PointXYZI>());
+
+    iss_detector.setSearchMethod(kdtree);
+    iss_detector.setSalientRadius(10 * 0.05);
+    iss_detector.setNonMaxRadius(8 * 0.05);
+    iss_detector.setThreshold21(0.2);
+    iss_detector.setThreshold32(0.2);
+    iss_detector.setMinNeighbors(10);
+    iss_detector.setNumberOfThreads(10);
+    iss_detector.setInputCloud(cloud);
+    iss_detector.compute(*result);
+
+	std::cout << "No of ISS Keypoints in the result are " << result->points.size () << std::endl;
+
+	// Copying the pointwithscale to pointxyz so as visualize the cloud
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
+	copyPointCloud(*result, *cloud_temp);
+
+	return cloud_temp;
+}
+
+
 /**************************MSGS ANSWER*************************/
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
 	// Container for original & filtered data
-	pcl::PCLPointCloud2* cloud_PCL2 = new pcl::PCLPointCloud2; //Tipo de dato para que lea del mensaje
-	pcl::PCLPointCloud2ConstPtr cloud_PLC2_Ptr(cloud_PCL2); //Tipo de dato que admite el filtro
-	pcl::PCLPointCloud2 cloud_f_PCL2;
+	pcl::PCLPointCloud2* cloud_PCL2_Ptr = new pcl::PCLPointCloud2; 		//Cloud pointer input filter
+	pcl::PCLPointCloud2ConstPtr cloud_PCL2_ConstPtr(cloud_PCL2_Ptr); 	//Filter Input (Pointer to Cloud pointer input filter)
+	pcl::PCLPointCloud2 cloud_f_PCL2;									//VoxelGrid Filter Output
 
-	// Convert to PCL data type
-	pcl_conversions::toPCL(*cloud_msg, *cloud_PCL2);
+	// Convert MSGS to PCL data type
+	pcl_conversions::toPCL(*cloud_msg, *cloud_PCL2_Ptr);
 	// Convert to PointCloud (PointXYZI) data type
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
-	pcl::fromPCLPointCloud2 (*cloud_PLC2_Ptr, *cloud_XYZI);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_XYZI (new pcl::PointCloud<pcl::PointXYZI>);		//Cloud XYZI original
+	pcl::fromPCLPointCloud2 (*cloud_PCL2_ConstPtr, *cloud_XYZI);
 
 	// VoxedGrid Filter
-	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-	sor.setInputCloud (cloud_PLC2_Ptr);
-	sor.setLeafSize (1.0,1.0,1.0);
-	sor.filter (cloud_f_PCL2);
+	pcl::VoxelGrid<pcl::PCLPointCloud2> FilterVoxelGrid;
+	FilterVoxelGrid.setInputCloud (cloud_PCL2_ConstPtr);
+	FilterVoxelGrid.setLeafSize (1.0,1.0,1.0);
+	FilterVoxelGrid.filter (cloud_f_PCL2);
 
 	// Paso la cloud filtrada a tipo PointCloud (PointXYZI)
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f_XYZI (new pcl::PointCloud<pcl::PointXYZI>);	//VoxelGrid Filter Output in Cloud XYZI
 	pcl::fromPCLPointCloud2 (cloud_f_PCL2, *cloud_f_XYZI);
 
-	// Prepare data clouds for the next filter in cascade	
-	pcl::PCLPointCloud2::Ptr cloud_f2_PCL2 (new pcl::PCLPointCloud2 ());
-	*cloud_PCL2 = cloud_f_PCL2;
+	// Prepare data clouds for the next filter in cascade
+	pcl::PCLPointCloud2::Ptr cloud_f2_PCL2 (new pcl::PCLPointCloud2 ());	//PassThrough Filter Output in X
+	*cloud_PCL2_Ptr = cloud_f_PCL2;											//Copy VoxelGrid Output Filter to Filter Input
 
 	// PassThrough Filter in X
 	pcl::PassThrough<pcl::PCLPointCloud2> pass;
-	pass.setInputCloud(cloud_PLC2_Ptr);
+	pass.setInputCloud(cloud_PCL2_ConstPtr);
 	pass.setFilterFieldName("x");
 	pass.setFilterLimits(-10, 10);
 	pass.filter(*cloud_f2_PCL2);
 
-	// Prepare data clouds for the next filter in cascade	
-	pcl::PCLPointCloud2::Ptr cloud_f3_PCL2 (new pcl::PCLPointCloud2 ());
-	*cloud_PCL2 = *cloud_f2_PCL2;
+	// Prepare data clouds for the next filter in cascade
+	pcl::PCLPointCloud2::Ptr cloud_f3_PCL2 (new pcl::PCLPointCloud2 ());	//Output PassThrough Filter in Y
+	*cloud_PCL2_Ptr = *cloud_f2_PCL2;										//Copy PassThroughX Filter Output to Filter Input
 
 	// PassThrough Filter in Y
-	pass.setInputCloud(cloud_PLC2_Ptr);
+	pass.setInputCloud(cloud_PCL2_ConstPtr);
 	pass.setFilterFieldName("y");
 	pass.setFilterLimits(-10, 16);
 	pass.filter(*cloud_f3_PCL2);
 
 	// Paso la cloud filtrada 2 a tipo PointCloud (PointXYZI)
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f3_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_f3_XYZI (new pcl::PointCloud<pcl::PointXYZI>);	//Cascade Filter Output in Cloud XYZI
 	pcl::fromPCLPointCloud2 (*cloud_f3_PCL2, *cloud_f3_XYZI);
 
-	// Obtengo KeyPoints segun SIFT en Z
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftZ_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
-	cloud_KPSiftZ_XYZI=KeyPointsSiftZ(cloud_f3_XYZI);
-
-	// Obtengo KeyPoints segun SIFT en Z
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftNE_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
-	//cloud_KPSiftNE_XYZI=KeyPointsSiftNE(cloud_f3_XYZI);
-
-	// Prubish the data filtered
+	// Publish the data filtered in pubF
    	sensor_msgs::PointCloud2 outputF;
-   	//pcl_conversions::fromPCL(cloud_PC, output); // Si la salida es tipo plc::PLCPointCloud2
    	pcl::toROSMsg(*cloud_f3_XYZI, outputF); // Si la salida es tipo plc::PintCloud
 	outputF.header.frame_id = "/velodyne";
 	pubF.publish (outputF);
 
+	// Obtengo KeyPoints segun SIFT Z
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftZ_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	cloud_KPSiftZ_XYZI=KeyPointsSiftZ(cloud_f3_XYZI);
+
+	// Obtengo KeyPoints segun SIFT NE
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftNE_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	cloud_KPSiftNE_XYZI=KeyPointsSiftNE(cloud_f3_XYZI);
+
+	// Obtengo KeyPoints segun ISS
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPISS_XYZI (new pcl::PointCloud<pcl::PointXYZI>);
+	cloud_KPISS_XYZI=KeyPointsISS(cloud_f3_XYZI);
+
 	// Prubish the data KP
    	sensor_msgs::PointCloud2 outputKP;
-   	//pcl_conversions::fromPCL(cloud_PC, output); // Si la salida es tipo plc::PLCPointCloud2
    	pcl::toROSMsg(*cloud_KPSiftZ_XYZI, outputKP); // Si la salida es tipo plc::PintCloud
 	outputKP.header.frame_id = "/velodyne";
 	pubKP.publish (outputKP);
