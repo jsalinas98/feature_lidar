@@ -20,6 +20,9 @@
     using namespace pcl;
     using namespace pcl::io;
 
+    pcl::visualization::PCLVisualizer viewer("Cloud Viewer");
+    pcl::visualization::PCLVisualizer ICPView("ICP Viewer");
+
     double computeCloudResolution(const pcl::PointCloud<PointXYZ>::ConstPtr &cloud)
     {
         double res = 0.0;
