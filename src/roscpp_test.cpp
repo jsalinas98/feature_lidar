@@ -41,7 +41,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Perform the actual filtering
 	pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 	sor.setInputCloud (cloud_PLC2_Ptr);
-	sor.setLeafSize (0.1, 0.1, 0.1);
+	sor.setLeafSize (1.0,1.0,1.0);
 	sor.filter (cloud_f_PCL2);
 
 	// Paso la cloud filtrada 1 a tipo PointCloud...PointXYZI
