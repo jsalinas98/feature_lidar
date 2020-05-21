@@ -6,30 +6,30 @@
 // Include PointCloud2 message
 #include <sensor_msgs/PointCloud2.h>
 
-// Include pcl
-#include <pcl_conversions/pcl_conversions.h>
+// Include pcl types
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+// Include pcl filters
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/passthrough.h>
 
 //Include features
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/pfh.h>
 #include <pcl/features/fpfh.h>
-#include <pcl/features/3dsc.h>
-#include <pcl/features/shot.h>
 #include <pcl/features/vfh.h>
 
 //Include Visualizer and Plotter
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/histogram_visualizer.h>
-#include <pcl/visualization/pcl_plotter.h>
+//#include <pcl/visualization/pcl_visualizer.h>
+//#include <pcl/visualization/histogram_visualizer.h>
+//#include <pcl/visualization/pcl_plotter.h>
 
 //Include keypoints
 #include <pcl/keypoints/harris_3d.h>
 #include <pcl/keypoints/sift_keypoint.h>
-
-#include <pcl/common/common.h>
+#include <pcl/keypoints/iss_3d.h>
 
 /**************************DECLARATIONS***********************/
 // Topics
@@ -43,29 +43,6 @@ ros::Publisher pubKP;
 
 // ROS Subscriber
 ros::Subscriber sub;
-
-pcl::visualization::PCLVisualizer::Ptr normalsVis (pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud, pcl::PointCloud<pcl::Normal>::ConstPtr normals)
-{
-	pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-	viewer->setBackgroundColor (0, 0, 0);
-	viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-	//viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");  // Edita la forma de ver los puntos
-	viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal> (cloud, normals, 10, 2, "normals");  //Muestra las lineas, (cloud, mormales, por cada x lineas muestra 1, long lineas, "")
-	viewer->addCoordinateSystem (0.5); //Muestra los ejes
-	viewer->initCameraParameters ();  //Inicia la vista en el origen
-	return (viewer);
-}
-
-pcl::visualization::PCLVisualizer::Ptr visualizer (pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud)
-{
-	pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-	viewer->setBackgroundColor (0, 0, 0);
-	viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
-	//viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");  // Edita la forma de ver los puntos
-	viewer->addCoordinateSystem (0.5); //Muestra los ejes
-	viewer->initCameraParameters ();  //Inicia la vista en el origen
-	return (viewer);
-}
 
 pcl::PointCloud<pcl::Normal>::Ptr Normals(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
@@ -187,20 +164,20 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointX
 	return descriptor;
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsInd(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsHarris(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
-	pcl::HarrisKeypoint3D <pcl::PointXYZ, pcl::PointXYZI> detector;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints (new pcl::PointCloud<pcl::PointXYZI>);
+
+	pcl::HarrisKeypoint3D <pcl::PointXYZ, pcl::PointXYZI> detector;
 	detector.setNonMaxSupression (true);
 	detector.setInputCloud (cloud);
 	detector.setThreshold (1e-11);
-
 	detector.setMethod(pcl::HarrisKeypoint3D<pcl::PointXYZ,pcl::PointXYZI>::HARRIS); 
 	detector.setRefine(false);
 	detector.setRadius(0.5); 
-
 	detector.compute (*keypoints);
-	pcl::console::print_highlight ("Detected %zd points in algunos s\n", keypoints->size ());
+
+	std::cout << "No of Harris Keypoints in the result are " << keypoints->points.size () << std::endl;
 
 	return keypoints;
 }
@@ -233,23 +210,18 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 	}
 
 	// Estimate the sift interest points using normals values from xyz as the Intensity variants
-	pcl::SIFTKeypoint<pcl::PointNormal, pcl::PointWithScale> sift;
-	pcl::PointCloud<pcl::PointWithScale> result;
+	pcl::SIFTKeypoint<pcl::PointNormal, pcl::PointXYZI> sift;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr result(new pcl::PointCloud<pcl::PointXYZI>);
 	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal> ());
 	sift.setSearchMethod(tree2);
 	sift.setScales(min_scale, n_octaves, n_scales_per_octave);
 	sift.setMinimumContrast(min_contrast);
 	sift.setInputCloud(cloud_normals);
-	sift.compute(result);
+	sift.compute(*result);
 
-	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
+	std::cout << "No of SIFT NE Keypoints in the result are " << result->points.size () << std::endl;
 
-	// Copying the pointwithscale to pointxyz so as visualize the cloud
-	//Probar a cambiar el tipo de salida para no hacer esto
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
-	copyPointCloud(result, *cloud_temp);
-
-	return cloud_temp;
+	return result;
 }
 
 // Incluir al usar SIFTKeyPointsFieldSelector para que seleccione segun la Z.
@@ -275,38 +247,40 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::P
 	const float min_contrast = 0.005f;
 
 	// Estimate the sift interest points using z values from xyz as the Intensity variants
-	pcl::SIFTKeypoint<pcl::PointXYZ, pcl::PointWithScale> sift;
-	pcl::PointCloud<pcl::PointWithScale> result;
+	pcl::SIFTKeypoint<pcl::PointXYZ, pcl::PointXYZI> sift;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr result(new pcl::PointCloud<pcl::PointXYZI>);
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ> ());
 	sift.setSearchMethod(tree);
 	sift.setScales(min_scale, n_octaves, n_scales_per_octave);
 	sift.setMinimumContrast(min_contrast);
 	sift.setInputCloud(cloud);
-	sift.compute(result);
+	sift.compute(*result);
 
-	std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
+	std::cout << "No of SIFT Z Keypoints in the result are " << result->points.size () << std::endl;
 
-	// Copying the pointwithscale to pointxyz so as visualize the cloud
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZI>);
-	copyPointCloud(result, *cloud_temp);
+	return result;
+}
 
-/*
-	// Visualization of keypoints along with the original cloud
-	pcl::visualization::PCLVisualizer viewer("PCL Viewer");
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> keypoints_color_handler (cloud_temp, 0, 255, 0);
-	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> cloud_color_handler (cloud, 255, 0, 0);
-	viewer.setBackgroundColor( 0.0, 0.0, 0.0 );
-	viewer.addPointCloud(cloud, cloud_color_handler, "cloud");
-	viewer.addPointCloud(cloud_temp, keypoints_color_handler, "keypoints");
-	viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 7, "keypoints");
+pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsISS(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
 
-	while(!viewer.wasStopped ())
-	{
-		viewer.spinOnce ();
-	}
-*/
-	return cloud_temp;
+	pcl::ISSKeypoint3D<pcl::PointXYZ, pcl::PointXYZI> iss_detector;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr result (new pcl::PointCloud<pcl::PointXYZI>());
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>());
 
+	iss_detector.setSearchMethod(tree);
+	iss_detector.setSalientRadius(10 * 0.05);
+	iss_detector.setNonMaxRadius(8 * 0.05);
+	iss_detector.setThreshold21(0.2);
+	iss_detector.setThreshold32(0.2);
+	iss_detector.setMinNeighbors(10);
+	iss_detector.setNumberOfThreads(10);
+	iss_detector.setInputCloud(cloud);
+	iss_detector.compute(*result);
+
+	std::cout << "No of ISS Keypoints in the result are " << result->points.size () << std::endl;
+
+	return result;
 }
 
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
@@ -340,16 +314,18 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pass.setFilterLimits(-10, 16);
 	pass.filter(*cloud_filtered3);
 
-	//Obtengo KeyPoints por distintos métodos
+	// Obtengo KeyPoints por distintos métodos
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPHarris(new pcl::PointCloud<pcl::PointXYZI>);
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftNE(new pcl::PointCloud<pcl::PointXYZI>);
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftZ(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPISS(new pcl::PointCloud<pcl::PointXYZI>);
 
-	cloud_KPHarris=KeyPointsInd(cloud_filtered3);
+	cloud_KPHarris=KeyPointsHarris(cloud_filtered3);
 	cloud_KPSiftNE=KeyPointsSiftNE(cloud_filtered3);
 	cloud_KPSiftZ=KeyPointsSiftZ(cloud_filtered3);
+	cloud_KPISS=KeyPointsISS(cloud_filtered3);
 
-	//Preparo como mensajes la nube filtrada y los KeyPoints que quiero visualizar
+	// Preparo como mensajes la nube filtrada y los KeyPoints que quiero visualizar
    	sensor_msgs::PointCloud2 outputF;
    	pcl::toROSMsg(*cloud_filtered3, outputF);
 	outputF.header.frame_id = "/velodyne";
@@ -366,7 +342,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 int main (int argc, char** argv)
 {
 	// Initialize the ROS Node "roscpp_pcl_example"
-	ros::init (argc, argv, "roscpp_pcl_example");
+	ros::init (argc, argv, "roscpp_pcl_depurado");
 	ros::NodeHandle nh;
 
 	// Print "Hello" message with node name to the terminal and ROS log file

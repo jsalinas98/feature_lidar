@@ -129,10 +129,12 @@ include_directories(
 )
 
   add_executable(roscpp_pcl src/roscpp_pcl.cpp)
-  #add_executable(segmentation src/segmentation.cpp)
-  #add_executable(roscpp_pcl_rsd src/roscpp_pcl_rsd.cpp)
   target_link_libraries(roscpp_pcl ${catkin_LIBRARIES})
+
+  #add_executable(roscpp_pcl_rsd src/roscpp_pcl_rsd.cpp)
   #target_link_libraries(roscpp_pcl_rsd ${catkin_LIBRARIES})
+
+  #add_executable(segmentation src/segmentation.cpp)
   #target_link_libraries(segmentation ${catkin_LIBRARIES})
 
   #add_executable (cylinder_segmentation src/cylinder_segmentation.cpp)
@@ -143,8 +145,13 @@ include_directories(
 
   add_executable (correspondences src/correspondences.cpp)
   target_link_libraries (correspondences ${catkin_LIBRARIES})
+
   add_executable (roscpp_test src/roscpp_test.cpp)
   target_link_libraries (roscpp_test ${catkin_LIBRARIES})
+
+  add_executable (roscpp_pcl_depurado src/roscpp_pcl_depurado.cpp)
+  target_link_libraries (roscpp_pcl_depurado ${catkin_LIBRARIES})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/feature_lidar.cpp
