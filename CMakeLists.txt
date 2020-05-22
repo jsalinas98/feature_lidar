@@ -128,8 +128,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-  add_executable(roscpp_pcl src/roscpp_pcl.cpp)
-  target_link_libraries(roscpp_pcl ${catkin_LIBRARIES})
+  #add_executable(roscpp_pcl src/roscpp_pcl.cpp)
+  #target_link_libraries(roscpp_pcl ${catkin_LIBRARIES})
 
   #add_executable(roscpp_pcl_rsd src/roscpp_pcl_rsd.cpp)
   #target_link_libraries(roscpp_pcl_rsd ${catkin_LIBRARIES})
