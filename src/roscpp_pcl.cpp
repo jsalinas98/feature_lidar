@@ -496,10 +496,9 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	//cloud_kp=KeyPointsSiftNE(cloud_nueva);
 	cloud_kp=KeyPointsSiftZ(cloud_nueva);
 
-	//DescriptorPFH_actual = PFH(cloud_nueva, cloud_normals);
-	//DescriptorFPFH_actual = FPFH(cloud_nueva, cloud_normals,9284);
-	//DescriptorFPFH_actual = FPFH(cloud_nueva, cloud_normals,3505);
-    //DescriptorVFH_actual = VFH(cloud_nueva, cloud_normals);
+	//descriptorPFH_actual = PFH(cloud_nueva, cloud_normals);
+	//descriptorFPFH_actual = FPFH(cloud_nueva, cloud_normals);
+    //descriptorVFH_actual = VFH(cloud_nueva, cloud_normals);
 	
 	/* No van aun
 	SC_3D(cloud_nueva, cloud_normals);
@@ -507,15 +506,13 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	//*/
 
 	// Aquí cambiar las variables según se vaya a probar uno u otro
-	if (DescriptorPFH_anterior != null){
+	if (keypoints_anterior != NULL){
 		// Aquí las fucioines para la correspondencia, q tendrán q devolver el dato de la correspondencia
 		// Pasando por argumento las keypoints y features actales y anteriores
 	}
-
-	DescriptorPFH_anterior = DescriptorPFH_actual;
-	//DescriptorFPFH_anterior = DescriptorPFH_actual;
-	//DescriptorVFH_anterior = DescriptorVFH_actual;
-
+	//descriptorPFH_anterior = descriptorPFH_actual;
+	//descriptorFPFH_anterior = descriptorPFH_actual;
+	//descriptorVFH_anterior = descriptorVFH_actual;
 	keypoints_anterior = cloud_kp;
 
 	/***************************************************************************************************************************/
