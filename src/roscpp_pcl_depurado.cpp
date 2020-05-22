@@ -337,7 +337,7 @@ pcl::CorrespondencesPtr correspondences_PFH(const pcl::PointCloud<pcl::PFHSignat
     // Transformation Estimation method 2
     //pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
     //transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-    std::cout << "Estimated Transform:" << std::endl << transform << std::endl;
+    std::cout << "Estimated Transform PFH:" << std::endl << transform << std::endl;
 
     return correspondences;
 }
@@ -381,7 +381,7 @@ pcl::CorrespondencesPtr correspondences_FPFH(const pcl::PointCloud<pcl::FPFHSign
     // Transformation Estimation method 2
     //pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
     //transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-    std::cout << "Estimated Transform:" << std::endl << transform << std::endl;
+    std::cout << "Estimated Transform FPFH:" << std::endl << transform << std::endl;
 
     return correspondences;
 }
@@ -425,7 +425,7 @@ pcl::CorrespondencesPtr correspondences_VFH(const pcl::PointCloud<pcl::VFHSignat
     // Transformation Estimation method 2
     //pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
     //transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-    std::cout << "Estimated Transform:" << std::endl << transform << std::endl;
+    std::cout << "Estimated Transform VFH:" << std::endl << transform << std::endl;
 
     return correspondences;
 }
@@ -508,6 +508,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	// Publish the data
 	pubF.publish (outputF);
 	pubKP.publish (outputKP);
+    std::cout << std::endl << std::endl;
 }
 
 int main (int argc, char** argv)
