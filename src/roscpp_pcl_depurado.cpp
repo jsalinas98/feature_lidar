@@ -329,17 +329,17 @@ pcl::CorrespondencesPtr correspondences_PFH(const pcl::PointCloud<pcl::PFHSignat
     rejector_sac.setRefineModel(false);
     rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
     rejector_sac.getCorrespondences(*correspondences_filtered);
-    correspondences.swap(correspondences_filtered);
-    std::cout << correspondences->size() << " vs. " << correspondences_filtered->size() << std::endl;
+    std::cout << correspondences_filtered->size() << " vs. " << correspondences->size() << std::endl;
+/*
     transform = rejector_sac.getBestTransformation();   // Transformation Estimation method 1
-
+    std::cout << "Estimated Transform PFH:" << std::endl << transform << std::endl;
+*/
 
     // Transformation Estimation method 2
     //pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
     //transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-    std::cout << "Estimated Transform PFH:" << std::endl << transform << std::endl;
 
-    return correspondences;
+    return correspondences_filtered;
 }
 
 pcl::CorrespondencesPtr correspondences_FPFH(const pcl::PointCloud<pcl::FPFHSignature33>::Ptr source_features, 
@@ -373,17 +373,17 @@ pcl::CorrespondencesPtr correspondences_FPFH(const pcl::PointCloud<pcl::FPFHSign
     rejector_sac.setRefineModel(false);
     rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
     rejector_sac.getCorrespondences(*correspondences_filtered);
-    correspondences.swap(correspondences_filtered);
-    std::cout << correspondences->size() << " vs. " << correspondences_filtered->size() << std::endl;
+    std::cout << correspondences_filtered->size() << " vs. " << correspondences->size() << std::endl;
+/*
     transform = rejector_sac.getBestTransformation();   // Transformation Estimation method 1
-
+    std::cout << "Estimated Transform FPFH:" << std::endl << transform << std::endl;
+*/
 
     // Transformation Estimation method 2
     //pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
     //transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-    std::cout << "Estimated Transform FPFH:" << std::endl << transform << std::endl;
 
-    return correspondences;
+    return correspondences_filtered;
 }
 
 pcl::CorrespondencesPtr correspondences_VFH(const pcl::PointCloud<pcl::VFHSignature308>::Ptr source_features, 
@@ -417,17 +417,17 @@ pcl::CorrespondencesPtr correspondences_VFH(const pcl::PointCloud<pcl::VFHSignat
     rejector_sac.setRefineModel(false);
     rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
     rejector_sac.getCorrespondences(*correspondences_filtered);
-    correspondences.swap(correspondences_filtered);
-    std::cout << correspondences->size() << " vs. " << correspondences_filtered->size() << std::endl;
+    std::cout << correspondences_filtered->size() << " vs. " << correspondences->size() << std::endl;
+/*
     transform = rejector_sac.getBestTransformation();   // Transformation Estimation method 1
-
+    std::cout << "Estimated Transform VFH:" << std::endl << transform << std::endl;
+*/
 
     // Transformation Estimation method 2
     //pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
     //transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-    std::cout << "Estimated Transform VFH:" << std::endl << transform << std::endl;
 
-    return correspondences;
+    return correspondences_filtered;
 }
 
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
