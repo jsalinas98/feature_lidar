@@ -1,3 +1,4 @@
+//Comentario pa Pedro, había un espacio
 /*
 * PCL Example using ROS and CPP
 */
