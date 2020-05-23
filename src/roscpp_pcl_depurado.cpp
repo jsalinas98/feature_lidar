@@ -117,6 +117,38 @@ pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointX
 	return descriptor;
 }
 
+pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+{
+	// PFH estimation object.
+	pcl::PFHEstimation<pcl::PointXYZI, pcl::Normal, pcl::PFHSignature125> pfh;
+	pfh.setInputCloud (cloud);
+	pfh.setInputNormals (cloud_normals);
+	
+	// Create an empty kdtree representation, and pass it to the normal estimation object.
+	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+	pcl::search::KdTree<pcl::PointXYZI>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZI> ());
+	pfh.setSearchMethod (tree);
+
+	// Object for storing the PFH descriptors for each point.
+	pcl::PointCloud<pcl::PFHSignature125>::Ptr descriptor(new pcl::PointCloud<pcl::PFHSignature125>());
+
+	// Use all neighbors in a sphere of radius 5cm (radius goes in meters)
+	// IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
+	pfh.setRadiusSearch (0.5);
+
+	// Compute the features
+	pfh.compute (*descriptor);
+/*
+	// Plotter object.
+	pcl::visualization::PCLHistogramVisualizer Hviewer;
+	// We need to set the size of the descriptor beforehand.
+	Hviewer.addFeatureHistogram(*descriptor, 125);
+
+	Hviewer.spin();
+*/
+	return descriptor;
+}
+
 
 pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, const pcl::PointIndicesConstPtr keypoints_indices)
 {
@@ -126,6 +158,39 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::Point
 	fpfh.setInputNormals (cloud_normals);
 	if(keypoints_indices != NULL)
 		fpfh.setIndices(keypoints_indices);
+	
+	// Create an empty kdtree representation, and pass it to the normal estimation object.
+	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
+	pcl::search::KdTree<pcl::PointXYZI>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZI> ());
+	fpfh.setSearchMethod (tree);
+
+	// Object for storing the FPFH descriptors for each point.
+	pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptor(new pcl::PointCloud<pcl::FPFHSignature33>());
+	
+	// Use all neighbors in a sphere of radius 5cm (radius goes in meters)
+	// IMPORTANT: the radius used here has to be larger than the radius used to estimate the surface normals!!!
+	fpfh.setRadiusSearch (0.5);
+
+	// Compute the features
+	fpfh.compute (*descriptor);
+
+/*
+	// Plotter object.
+	pcl::visualization::PCLPlotter plotter;
+	// We need to set the size of the descriptor beforehand.
+	plotter.addFeatureHistogram(*descriptor, 33);
+
+	plotter.plot();
+*/
+	return descriptor;
+}
+
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+{
+	// FPFH estimation object.
+	pcl::FPFHEstimation<pcl::PointXYZI, pcl::Normal, pcl::FPFHSignature33> fpfh;
+	fpfh.setInputCloud (cloud);
+	fpfh.setInputNormals (cloud_normals);
 	
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
 	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
@@ -166,6 +231,37 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointX
 	vfh.setInputNormals(cloud_normals);
 	if(keypoints_indices != NULL)
 		vfh.setIndices(keypoints_indices);
+	vfh.setSearchMethod(tree);
+	// Optionally, we can normalize the bins of the resulting histogram,
+	// using the total number of points.
+	vfh.setNormalizeBins(true);
+	// Also, we can normalize the SDC with the maximum size found between
+	// the centroid and any of the cluster's points.
+	vfh.setNormalizeDistance(false);
+
+	vfh.compute(*descriptor);
+/*
+	// Plotter object.
+	pcl::visualization::PCLPlotter plotter;
+	// We need to set the size of the descriptor beforehand.
+	plotter.addFeatureHistogram(*descriptor, 308);
+
+	plotter.plot();
+*/
+	return descriptor;
+}
+
+pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+{
+	// Object for storing the VFH descriptor.
+	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptor(new pcl::PointCloud<pcl::VFHSignature308>);
+
+	pcl::search::KdTree<pcl::PointXYZI>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZI>);
+
+	// VFH estimation object.
+	pcl::VFHEstimation<pcl::PointXYZI, pcl::Normal, pcl::VFHSignature308> vfh;
+	vfh.setInputCloud(cloud);
+	vfh.setInputNormals(cloud_normals);
 	vfh.setSearchMethod(tree);
 	// Optionally, we can normalize the bins of the resulting histogram,
 	// using the total number of points.
