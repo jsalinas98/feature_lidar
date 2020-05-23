@@ -348,15 +348,15 @@ pcl::PointCloud<pcl::PointXYZI> KeyPointsSiftNE(const pcl::PointCloud<pcl::Point
 // Incluir al usar SIFTKeyPointsFieldSelector para que seleccione segun la Z.
 namespace pcl
 {
-  template<>
-    struct SIFTKeypointFieldSelector<PointXYZI>
-    {
-      inline float
-      operator () (const PointXYZI &p) const
-      {
-	return p.z;
-      }
-    };
+	template<>
+	struct SIFTKeypointFieldSelector<PointXYZI>
+	{
+		inline float
+		operator () (const PointXYZI &p) const
+		{
+			return p.z;
+		}
+	};
 }
 
 pcl::PointCloud<pcl::PointXYZI> KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, pcl::PointIndicesConstPtr* keypoints_indices)
@@ -539,8 +539,10 @@ pcl::CorrespondencesPtr correspondences_VFH(const pcl::PointCloud<pcl::VFHSignat
     return correspondences_filtered;
 }
 
-void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
+void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints_type, char* feature_type)
 {
+	std::cout << "Aplico los metodos indicados: Keypoint-> " << keypoints_type <<" , feature -> " << feature_type << std::endl;
+	std::cout << std::endl;
 	// Container for original data
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
 	pcl::fromROSMsg(*cloud_msg, *cloud);
@@ -571,20 +573,33 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pass.filter(*cloud_filtered3);
 
 	// Obtengo KeyPoints por distintos métodos
-	pcl::PointCloud<pcl::PointXYZI> cloud_KPHarris;
-	pcl::PointCloud<pcl::PointXYZI> cloud_KPSiftNE;
-	pcl::PointCloud<pcl::PointXYZI> cloud_KPSiftZ;
-	pcl::PointCloud<pcl::PointXYZI> cloud_KPISS;
+	pcl::PointCloud<pcl::PointXYZI> cloud_KP;
+	pcl::PointIndicesConstPtr indices_KP;
 
-	pcl::PointIndicesConstPtr indices_KPHarris;
-	pcl::PointIndicesConstPtr indices_KPSiftNE;
-	pcl::PointIndicesConstPtr indices_KPSiftZ;
-	pcl::PointIndicesConstPtr indices_KPISS;
-
-	cloud_KPHarris = KeyPointsHarris(cloud_filtered3, &indices_KPHarris);
-	cloud_KPSiftNE = KeyPointsSiftNE(cloud_filtered3, &indices_KPSiftNE);
-	cloud_KPSiftZ = KeyPointsSiftZ(cloud_filtered3, &indices_KPSiftZ);
-	cloud_KPISS = KeyPointsISS(cloud_filtered3, &indices_KPISS);
+	if (strcmp(keypoints_type,"KPH")==0){
+		std::cout << "Calculo Keypoints por Harris3D" << std::endl;
+		cloud_KP = KeyPointsHarris(cloud_filtered3, &indices_KP);
+	}
+	else if (strcmp(keypoints_type,"KPSZ")==0){
+		std::cout << "Calculo Keypoints por SiftZ" << std::endl;
+		cloud_KP = KeyPointsSiftZ(cloud_filtered3, &indices_KP);
+	}
+	else if (strcmp(keypoints_type,"KPSNE")==0){
+		std::cout << "Calculo Keypoints por SiftNE" << std::endl;
+		cloud_KP = KeyPointsSiftNE(cloud_filtered3, &indices_KP);
+	}
+	else if (strcmp(keypoints_type,"KPISS")==0){
+		std::cout << "Calculo Keypoints por ISS3D" << std::endl;
+		cloud_KP = KeyPointsISS(cloud_filtered3, &indices_KP);
+	}
+	else if (strcmp(keypoints_type,"0")==0){
+		std::cout << "No calculo Keypoints" << std::endl;
+	}
+	else{
+		std::cout << "[ERROR]: Metodo "<< keypoints_type << " no encontrado" << std::endl;
+		std::cout << "Introduzca uno de los siguientes metodos como primer parametro, si procede: Harris -> KPH, SiftZ -> KPSZ, SiftNE -> KPSNE, ISS3D -> KPISS" << std::endl;
+	}
+	std::cout << std::endl;
 
 	//Obtengo las normales
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normal(new pcl::PointCloud<pcl::Normal>);
@@ -595,21 +610,56 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorFPFH_actual(new pcl::PointCloud<pcl::FPFHSignature33>());
 	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptorVFH_actual(new pcl::PointCloud<pcl::VFHSignature308>());
 
-	descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal, indices_KPSiftNE);
-	descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal, indices_KPSiftNE);
-	descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal, indices_KPSiftNE);
-
-	if (keypoints_anterior != NULL){
-		correspondences_PFH(descriptorPFH_anterior, descriptorPFH_actual, keypoints_anterior, cloud_filtered3);
-		correspondences_FPFH(descriptorFPHF_anterior, descriptorFPFH_actual, keypoints_anterior, cloud_filtered3);
-		correspondences_VFH(descriptorVFH_anterior, descriptorVFH_actual, keypoints_anterior, cloud_filtered3);
+	if (strcmp(feature_type,"PFH")==0){
+		std::cout << "Calculo feature PFH" << std::endl;
+		if (strcmp(keypoints_type,"0")==0){
+			descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal);
+		}
+		else{
+			descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal, indices_KP);
+		}
+		if (keypoints_anterior->points.size() > 0){
+			std::cout << "Calculo correspondencia PFH" << std::endl;
+			correspondences_PFH(descriptorPFH_anterior, descriptorPFH_actual, keypoints_anterior, cloud_filtered3);
+		}
+		descriptorPFH_anterior = descriptorPFH_actual;
 	}
+	else if (strcmp(feature_type,"FPFH")==0){
+		std::cout << "Calculo feature FPFH" << std::endl;
+		if (strcmp(keypoints_type,"0")==0){
+			descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal);
+		}
+		else{
+			descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal, indices_KP);
+		}
+		if (keypoints_anterior->points.size() > 0){
+			std::cout << "Calculo correspondencia FPFH" << std::endl;
+			correspondences_FPFH(descriptorFPHF_anterior, descriptorFPFH_actual, keypoints_anterior, cloud_filtered3);
+		}
+		descriptorFPHF_anterior = descriptorFPFH_actual;
+	}
+	else if (strcmp(feature_type,"VFH")==0){
+		std::cout << "Calculo feature VFH" << std::endl;
+		if (strcmp(keypoints_type,"0")==0){
+			descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal);
+		}
+		else{
+			descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal, indices_KP);
+		}
+		if (keypoints_anterior->points.size() != 0){
+			std::cout << "Calculo correspondencia VFH" << std::endl;
+			correspondences_VFH(descriptorVFH_anterior, descriptorVFH_actual, keypoints_anterior, cloud_filtered3);
+		}
+		descriptorVFH_anterior = descriptorVFH_actual;
+	}
+	else{
+		std::cout << "ERROR en la selección de feature" << std::endl;
+		std::cout << "Introduzca una de las siguientes como segundo o único parámetro: PFH, FPFH, VFH" << std::endl;
+	}
+	std::cout << std::endl;
 
 	keypoints_anterior = cloud_filtered3;
 
-	descriptorPFH_anterior = descriptorPFH_actual;
-	descriptorFPHF_anterior = descriptorFPFH_actual;
-	descriptorVFH_anterior = descriptorVFH_actual;
 
 	// Preparo como mensajes la nube filtrada y los KeyPoints que quiero visualizar
    	sensor_msgs::PointCloud2 outputF;
@@ -626,17 +676,139 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
     std::cout << std::endl << std::endl;
 }
 
+void pfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "0";
+	char feature[] = "PFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void fpfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "0";
+	char feature[] = "FPFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void vfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "0";
+	char feature[] = "VFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kph_pfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPH";
+	char feature[] = "PFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kph_fpfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPH";
+	char feature[] = "FPFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kph_vfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPH";
+	char feature[] = "VFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpsz_pfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPSZ";
+	char feature[] = "PFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpsz_fpfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPSZ";
+	char feature[] = "FPFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpsz_vfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPSZ";
+	char feature[] = "VFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpsne_pfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPSNE";
+	char feature[] = "PFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpsne_fpfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPSNE";
+	char feature[] = "FPFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpsne_vfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPSNE";
+	char feature[] = "VFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpiss_pfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPIIS";
+	char feature[] = "PFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpiss_fpfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPIIS";
+	char feature[] = "FPFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+void kpiss_vfh(const sensor_msgs::PointCloud2ConstPtr& cloud_msg){
+	char kp[] = "KPIIS";
+	char feature[] = "VFH";
+	cloud_cb(cloud_msg, kp, feature);
+}
+
 int main (int argc, char** argv)
 {
 	// Initialize the ROS Node "roscpp_pcl_example"
 	ros::init (argc, argv, "roscpp_pcl_depurado");
 	ros::NodeHandle nh;
-
 	// Print "Hello" message with node name to the terminal and ROS log file
 	ROS_INFO_STREAM("Hello from ROS Node: " << ros::this_node::getName());
+	std::cout << std::endl;
+	std::cout << std::endl;
+
+	if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"PFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kph_pfh);
+	else if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"FPFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kph_fpfh);
+	else if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"VFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kph_vfh);
+	else if (strcmp(argv[1],"KPH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kph_fpfh);
+	else if (strcmp(argv[1],"KPSZ")==0 && strcmp(argv[2],"PFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsz_pfh);
+	else if (strcmp(argv[1],"KPSZ")==0 && strcmp(argv[2],"FPFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsz_fpfh);
+	else if (strcmp(argv[1],"KPSZ")==0 && strcmp(argv[2],"VFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsz_vfh);
+	else if (strcmp(argv[1],"KPSZ")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsz_fpfh);
+	else if (strcmp(argv[1],"KPSNE")==0 && strcmp(argv[2],"PFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsne_pfh);
+	else if (strcmp(argv[1],"KPSNE")==0 && strcmp(argv[2],"FPFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsne_fpfh);
+	else if (strcmp(argv[1],"KPSNE")==0 && strcmp(argv[2],"VFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsne_vfh);
+	else if (strcmp(argv[1],"KPSNE")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpsne_fpfh);
+	else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"PFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpiss_pfh);
+	else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"FPFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpiss_fpfh);
+	else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"VFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpiss_vfh);
+	else if (strcmp(argv[1],"KPISS")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kpiss_fpfh);
+	else if (strcmp(argv[1],"PFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, pfh);
+	else if (strcmp(argv[1],"FPFH")==0)
+		sub = nh.subscribe(IMAGE_TOPIC, 1, fpfh);
+	else if (strcmp(argv[1],"VFH")==0)	
+		sub = nh.subscribe(IMAGE_TOPIC, 1, vfh);
+	else {
+		std::cout << "ELSE MAIN" << std::endl;
+		sub = nh.subscribe(IMAGE_TOPIC, 1, kph_fpfh);
+	}
+	
+
 
 	// Create a ROS Subscriber to IMAGE_TOPIC with a queue_size of 1 and a callback function to cloud_cb
-	sub = nh.subscribe(IMAGE_TOPIC, 1, cloud_cb);
+	//sub = nh.subscribe(IMAGE_TOPIC, 1, cloud_cb);
 
 	// Create a ROS publisher to PUBLISH_TOPIC with a queue_size of 1
 	pubF = nh.advertise<sensor_msgs::PointCloud2>(PUBLISH_TOPIC, 1);
