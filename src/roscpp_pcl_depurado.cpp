@@ -47,6 +47,7 @@ static const std::string PUBLISH_TOPIC2 = "/pcl/points2";
 
 //Variables globales
 pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints_anterior (new pcl::PointCloud<pcl::PointXYZI>);
+
 pcl::PointCloud<pcl::PFHSignature125>::Ptr descriptorPFH_anterior(new pcl::PointCloud<pcl::PFHSignature125>());
 pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorFPHF_anterior(new pcl::PointCloud<pcl::FPFHSignature33>());
 pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptorVFH_anterior(new pcl::PointCloud<pcl::VFHSignature308>);
@@ -82,12 +83,14 @@ pcl::PointCloud<pcl::Normal>::Ptr Normals(const pcl::PointCloud<pcl::PointXYZI>:
 	return cloud_normals;
 }
 
-pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, const pcl::PointIndicesConstPtr keypoints_indices)
 {
 	// PFH estimation object.
 	pcl::PFHEstimation<pcl::PointXYZI, pcl::Normal, pcl::PFHSignature125> pfh;
 	pfh.setInputCloud (cloud);
 	pfh.setInputNormals (cloud_normals);
+	if(keypoints_indices != NULL)
+		pfh.setIndices(keypoints_indices);
 	
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
 	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
@@ -115,12 +118,14 @@ pcl::PointCloud<pcl::PFHSignature125>::Ptr PFH(const pcl::PointCloud<pcl::PointX
 }
 
 
-pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, const pcl::PointIndicesConstPtr keypoints_indices)
 {
 	// FPFH estimation object.
 	pcl::FPFHEstimation<pcl::PointXYZI, pcl::Normal, pcl::FPFHSignature33> fpfh;
 	fpfh.setInputCloud (cloud);
 	fpfh.setInputNormals (cloud_normals);
+	if(keypoints_indices != NULL)
+		fpfh.setIndices(keypoints_indices);
 	
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
 	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
@@ -148,7 +153,7 @@ pcl::PointCloud<pcl::FPFHSignature33>::Ptr FPFH(const pcl::PointCloud<pcl::Point
 	return descriptor;
 }
 
-pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, const pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, const pcl::PointIndicesConstPtr keypoints_indices)
 {
 	// Object for storing the VFH descriptor.
 	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptor(new pcl::PointCloud<pcl::VFHSignature308>);
@@ -159,6 +164,8 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointX
 	pcl::VFHEstimation<pcl::PointXYZI, pcl::Normal, pcl::VFHSignature308> vfh;
 	vfh.setInputCloud(cloud);
 	vfh.setInputNormals(cloud_normals);
+	if(keypoints_indices != NULL)
+		vfh.setIndices(keypoints_indices);
 	vfh.setSearchMethod(tree);
 	// Optionally, we can normalize the bins of the resulting histogram,
 	// using the total number of points.
@@ -179,9 +186,9 @@ pcl::PointCloud<pcl::VFHSignature308>::Ptr VFH(const pcl::PointCloud<pcl::PointX
 	return descriptor;
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsHarris(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI> KeyPointsHarris(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, pcl::PointIndicesConstPtr* keypoints_indices)
 {
-	pcl::PointCloud<pcl::PointXYZI>::Ptr keypoints (new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI> keypoints;
 
 	pcl::HarrisKeypoint3D <pcl::PointXYZI, pcl::PointXYZI> detector;
 	detector.setNonMaxSupression (true);
@@ -189,15 +196,16 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsHarris(const pcl::PointCloud<pcl::
 	detector.setThreshold (1e-11);
 	detector.setMethod(pcl::HarrisKeypoint3D<pcl::PointXYZI,pcl::PointXYZI>::HARRIS); 
 	detector.setRefine(false);
-	detector.setRadius(0.5); 
-	detector.compute (*keypoints);
+	detector.setRadius(0.5);
+	detector.compute (keypoints);
+	*keypoints_indices = detector.getKeypointsIndices();
 
-	std::cout << "No of Harris Keypoints in the result are " << keypoints->points.size () << std::endl;
+	std::cout << "No of Harris Keypoints in the result are " << keypoints.points.size () << std::endl;
 
 	return keypoints;
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI> KeyPointsSiftNE(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, pcl::PointIndicesConstPtr* keypoints_indices)
 {
 	// Parameters for sift computation
 	const float min_scale = 0.01f;
@@ -225,18 +233,20 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftNE(const pcl::PointCloud<pcl::
 	}
 
 	// Estimate the sift interest points using normals values from xyz as the Intensity variants
-	pcl::SIFTKeypoint<pcl::PointNormal, pcl::PointXYZI> sift;
-	pcl::PointCloud<pcl::PointXYZI>::Ptr result(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI> keypoints;
 	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal> ());
+
+	pcl::SIFTKeypoint<pcl::PointNormal, pcl::PointXYZI> sift;
 	sift.setSearchMethod(tree2);
 	sift.setScales(min_scale, n_octaves, n_scales_per_octave);
 	sift.setMinimumContrast(min_contrast);
 	sift.setInputCloud(cloud_normals);
-	sift.compute(*result);
+	sift.compute(keypoints);
+	*keypoints_indices = sift.getKeypointsIndices();
 
-	std::cout << "No of SIFT NE Keypoints in the result are " << result->points.size () << std::endl;
+	std::cout << "No of SIFT NE Keypoints in the result are " << keypoints.points.size () << std::endl;
 
-	return result;
+	return keypoints;
 }
 
 // Incluir al usar SIFTKeyPointsFieldSelector para que seleccione segun la Z.
@@ -253,7 +263,7 @@ namespace pcl
     };
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI> KeyPointsSiftZ(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, pcl::PointIndicesConstPtr* keypoints_indices)
 {  
 	// Parameters for sift computation
 	const float min_scale = 0.005f;
@@ -262,25 +272,27 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsSiftZ(const pcl::PointCloud<pcl::P
 	const float min_contrast = 0.005f;
 
 	// Estimate the sift interest points using z values from xyz as the Intensity variants
-	pcl::SIFTKeypoint<pcl::PointXYZI, pcl::PointXYZI> sift;
-	pcl::PointCloud<pcl::PointXYZI>::Ptr result(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI> keypoints;
 	pcl::search::KdTree<pcl::PointXYZI>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZI> ());
+
+	pcl::SIFTKeypoint<pcl::PointXYZI, pcl::PointXYZI> sift;
 	sift.setSearchMethod(tree);
 	sift.setScales(min_scale, n_octaves, n_scales_per_octave);
 	sift.setMinimumContrast(min_contrast);
 	sift.setInputCloud(cloud);
-	sift.compute(*result);
+	sift.compute(keypoints);
+	*keypoints_indices = sift.getKeypointsIndices();
 
-	std::cout << "No of SIFT Z Keypoints in the result are " << result->points.size () << std::endl;
+	std::cout << "No of SIFT Z Keypoints in the result are " << keypoints.points.size () << std::endl;
 
-	return result;
+	return keypoints;
 }
 
-pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsISS(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+pcl::PointCloud<pcl::PointXYZI> KeyPointsISS(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud, pcl::PointIndicesConstPtr* keypoints_indices)
 {
 
 	pcl::ISSKeypoint3D<pcl::PointXYZI, pcl::PointXYZI> iss_detector;
-	pcl::PointCloud<pcl::PointXYZI>::Ptr result (new pcl::PointCloud<pcl::PointXYZI>());
+	pcl::PointCloud<pcl::PointXYZI> keypoints;
 	pcl::search::KdTree<pcl::PointXYZI>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZI>());
 
 	iss_detector.setSearchMethod(tree);
@@ -291,11 +303,12 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr KeyPointsISS(const pcl::PointCloud<pcl::Poi
 	iss_detector.setMinNeighbors(10);
 	iss_detector.setNumberOfThreads(10);
 	iss_detector.setInputCloud(cloud);
-	iss_detector.compute(*result);
+	iss_detector.compute(keypoints);
+	*keypoints_indices = iss_detector.getKeypointsIndices();
 
-	std::cout << "No of ISS Keypoints in the result are " << result->points.size () << std::endl;
+	std::cout << "No of ISS Keypoints in the result are " << keypoints.points.size () << std::endl;
 
-	return result;
+	return keypoints;
 }
 
 pcl::CorrespondencesPtr correspondences_PFH(const pcl::PointCloud<pcl::PFHSignature125>::Ptr source_features, 
@@ -462,27 +475,33 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	pass.filter(*cloud_filtered3);
 
 	// Obtengo KeyPoints por distintos métodos
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPHarris(new pcl::PointCloud<pcl::PointXYZI>);
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftNE(new pcl::PointCloud<pcl::PointXYZI>);
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPSiftZ(new pcl::PointCloud<pcl::PointXYZI>);
-	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_KPISS(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::PointCloud<pcl::PointXYZI> cloud_KPHarris;
+	pcl::PointCloud<pcl::PointXYZI> cloud_KPSiftNE;
+	pcl::PointCloud<pcl::PointXYZI> cloud_KPSiftZ;
+	pcl::PointCloud<pcl::PointXYZI> cloud_KPISS;
 
-	cloud_KPHarris=KeyPointsHarris(cloud_filtered3);
-	cloud_KPSiftNE=KeyPointsSiftNE(cloud_filtered3);
-	cloud_KPSiftZ=KeyPointsSiftZ(cloud_filtered3);
-	cloud_KPISS=KeyPointsISS(cloud_filtered3);
+	pcl::PointIndicesConstPtr indices_KPHarris;
+	pcl::PointIndicesConstPtr indices_KPSiftNE;
+	pcl::PointIndicesConstPtr indices_KPSiftZ;
+	pcl::PointIndicesConstPtr indices_KPISS;
 
+	cloud_KPHarris = KeyPointsHarris(cloud_filtered3, &indices_KPHarris);
+	cloud_KPSiftNE = KeyPointsSiftNE(cloud_filtered3, &indices_KPSiftNE);
+	cloud_KPSiftZ = KeyPointsSiftZ(cloud_filtered3, &indices_KPSiftZ);
+	cloud_KPISS = KeyPointsISS(cloud_filtered3, &indices_KPISS);
+
+	//Obtengo las normales
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normal(new pcl::PointCloud<pcl::Normal>);
-
 	cloud_normal = Normals(cloud_filtered3);
 
+	//Obtengo los distintos descriptores de las distintas nubes de keypoints (Obviamente hay que meter las llamadas pk ahora solo está para los KPSiftNE)
 	pcl::PointCloud<pcl::PFHSignature125>::Ptr descriptorPFH_actual(new pcl::PointCloud<pcl::PFHSignature125>());
 	pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorFPFH_actual(new pcl::PointCloud<pcl::FPFHSignature33>());
 	pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptorVFH_actual(new pcl::PointCloud<pcl::VFHSignature308>());
 
-	descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal);
-	descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal);
-	descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal);
+	descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal, indices_KPSiftNE);
+	descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal, indices_KPSiftNE);
+	descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal, indices_KPSiftNE);
 
 	if (keypoints_anterior != NULL){
 		correspondences_PFH(descriptorPFH_anterior, descriptorPFH_actual, keypoints_anterior, cloud_filtered3);
@@ -502,7 +521,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	outputF.header.frame_id = "/velodyne";
 
    	sensor_msgs::PointCloud2 outputKP;
-   	pcl::toROSMsg(*cloud_KPHarris, outputKP);
+   	pcl::toROSMsg(*cloud_filtered3, outputKP);
 	outputKP.header.frame_id = "/velodyne";
 
 	// Publish the data
