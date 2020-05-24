@@ -380,7 +380,7 @@ pcl::CorrespondencesPtr correspondences_FPFH(const pcl::PointCloud<pcl::FPFHSign
 	rejector_sac.setInputSource(source_keypoints);
 	rejector_sac.setInputTarget(target_keypoints);
 	rejector_sac.setInlierThreshold(2.5); // distance in m, not the squared distance
-	rejector_sac.setMaximumIterations(1000);
+	rejector_sac.setMaximumIterations(1000000);
 	rejector_sac.setRefineModel(false);
 	rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
 	rejector_sac.getCorrespondences(*correspondences_filtered);
@@ -504,6 +504,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 	}
 	else if (strcmp(keypoints_type,"0")==0)
 	{
+		cloud_KP = cloud_filtered3;
 		std::cout << "No calculo Keypoints" << std::endl;
 	}
 	else
@@ -533,7 +534,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		if (keypoints_anterior->points.size() > 0)
 		{
 			std::cout << "Calculo correspondencia PFH" << std::endl;
-			int corr=correspondences_PFH(descriptorPFH_anterior, descriptorPFH_actual, keypoints_anterior, cloud_filtered3)->size();
+			int corr=correspondences_PFH(descriptorPFH_anterior, descriptorPFH_actual, keypoints_anterior, cloud_KP)->size();
 			std_msgs::Float32 outToPy;
 			outToPy.data = (float)(corr);
 			pubToPy.publish(outToPy);
@@ -555,7 +556,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		if (keypoints_anterior->points.size() > 0)
 		{
 			std::cout << "Calculo correspondencia FPFH" << std::endl;
-			int corr=correspondences_FPFH(descriptorFPHF_anterior, descriptorFPFH_actual, keypoints_anterior, cloud_filtered3)->size();
+			int corr=correspondences_FPFH(descriptorFPHF_anterior, descriptorFPFH_actual, keypoints_anterior, cloud_KP)->size();
 			std_msgs::Float32 outToPy;
 			outToPy.data = (float)(corr);
 			pubToPy.publish(outToPy);
@@ -585,7 +586,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		std::cout << "[ERROR] Feature no detectado" << std::endl;
 		std::cout << "Introduzca una de las siguientes opciones como segundo o único parámetro de la funcion: PFH, FPFH, VFH" << std::endl;
 	}
-	keypoints_anterior = cloud_filtered3;
+	keypoints_anterior = cloud_KP;
 
 
 /********************** PUBLICACION NUBES DE PUNTOS PARA SU VISUALIZACION (DESARROLLO) ***********************************
