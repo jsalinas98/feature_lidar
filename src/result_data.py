@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 import rospy
+import matplotlib.pyplot as plt
+import numpy as np
 
 from std_msgs.msg import Float32
 
-lista = []
+valores = np.array([])
+
 def callback(data):
 	rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data.data)
-	lista.append(data.data)
-	print (lista)
+	np.append(valores, data.data)
+	if(valores.size>20):
+		plt.plot(np.arange(0,valores.size,1),valores)
+		plt.show()
 
 def listener():
 
