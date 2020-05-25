@@ -329,7 +329,6 @@ pcl::CorrespondencesPtr correspondences_PFH(const pcl::PointCloud<pcl::PFHSignat
 
 	// Correspondance rejection RANSAC
 
-	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 	pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZI> rejector_sac;
 	pcl::CorrespondencesPtr correspondences_filtered(new pcl::Correspondences());
 	rejector_sac.setInputSource(source_keypoints);
@@ -340,14 +339,6 @@ pcl::CorrespondencesPtr correspondences_PFH(const pcl::PointCloud<pcl::PFHSignat
 	rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
 	rejector_sac.getCorrespondences(*correspondences_filtered);
 	std::cout << correspondences_filtered->size() << " vs. " << correspondences->size() << std::endl;
-	/*
-	transform = rejector_sac.getBestTransformation();   // Transformation Estimation method 1
-	std::cout << "Estimated Transform PFH:" << std::endl << transform << std::endl;
-	*/
-
-	// Transformation Estimation method 2
-	//pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
-	//transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
 
 	return correspondences_filtered;
 }
@@ -374,7 +365,6 @@ pcl::CorrespondencesPtr correspondences_FPFH(const pcl::PointCloud<pcl::FPFHSign
 
 	// Correspondance rejection RANSAC
 
-	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 	pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZI> rejector_sac;
 	pcl::CorrespondencesPtr correspondences_filtered(new pcl::Correspondences());
 	rejector_sac.setInputSource(source_keypoints);
@@ -385,64 +375,13 @@ pcl::CorrespondencesPtr correspondences_FPFH(const pcl::PointCloud<pcl::FPFHSign
 	rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
 	rejector_sac.getCorrespondences(*correspondences_filtered);
 	std::cout << correspondences_filtered->size() << " vs. " << correspondences->size() << std::endl;
-	/*
-	transform = rejector_sac.getBestTransformation();   // Transformation Estimation method 1
-	std::cout << "Estimated Transform FPFH:" << std::endl << transform << std::endl;
-	*/
-
-	// Transformation Estimation method 2
-	//pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
-	//transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
-
-	return correspondences_filtered;
-}
-
-pcl::CorrespondencesPtr correspondences_VFH(const pcl::PointCloud<pcl::VFHSignature308>::Ptr source_features, 
-	const pcl::PointCloud<pcl::VFHSignature308>::Ptr target_features,
-	const pcl::PointCloud<pcl::PointXYZI>::Ptr source_keypoints,
-	const pcl::PointCloud<pcl::PointXYZI>::Ptr target_keypoints)
-{
-	// estimate correspondences
-	pcl::registration::CorrespondenceEstimation<pcl::VFHSignature308, pcl::VFHSignature308> est;
-	pcl::CorrespondencesPtr correspondences(new pcl::Correspondences());
-	est.setInputSource(source_features);
-	est.setInputTarget(target_features);
-	est.determineCorrespondences(*correspondences);
-
-	// Duplication rejection Duplicate
-
-	pcl::CorrespondencesPtr correspondences_result_rej_one_to_one(new pcl::Correspondences());
-	pcl::registration::CorrespondenceRejectorOneToOne corr_rej_one_to_one;
-	corr_rej_one_to_one.setInputCorrespondences(correspondences);
-	corr_rej_one_to_one.getCorrespondences(*correspondences_result_rej_one_to_one);
-
-
-	// Correspondance rejection RANSAC
-
-	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
-	pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZI> rejector_sac;
-	pcl::CorrespondencesPtr correspondences_filtered(new pcl::Correspondences());
-	rejector_sac.setInputSource(source_keypoints);
-	rejector_sac.setInputTarget(target_keypoints);
-	rejector_sac.setInlierThreshold(2.5); // distance in m, not the squared distance
-	rejector_sac.setMaximumIterations(1000000);
-	rejector_sac.setRefineModel(false);
-	rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
-	rejector_sac.getCorrespondences(*correspondences_filtered);
-	std::cout << correspondences_filtered->size() << " vs. " << correspondences->size() << std::endl;
-	/*
-	transform = rejector_sac.getBestTransformation();   // Transformation Estimation method 1
-	std::cout << "Estimated Transform VFH:" << std::endl << transform << std::endl;
-	*/
-
-	// Transformation Estimation method 2
-	//pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> transformation_estimation;
-	//transformation_estimation.estimateRigidTransformation(*source_keypoints, *target_keypoints, *correspondences, transform);
 
 	return correspondences_filtered;
 }
 
 int i=0;
+int n_corr=0;
+int n_kp=0;
 void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints_type, char* feature_type)
 {
 	i++;
@@ -513,7 +452,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		std::cout << "Introduzca uno de los siguientes metodos como primer parametro de la funcion, si procede: Harris -> KPH, SiftZ -> KPSZ, SiftNE -> KPSNE, ISS3D -> KPISS" << std::endl;
 	}
 	std::cout << std::endl;
-
+	n_kp+=cloud_KP->points.size();
 	//Obtengo las normales
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_normal(new pcl::PointCloud<pcl::Normal>);
 	cloud_normal = Normals(cloud_filtered3);
@@ -523,7 +462,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 	{
 		std::cout << "Calculo feature PFH" << std::endl;
 		pcl::PointCloud<pcl::PFHSignature125>::Ptr descriptorPFH_actual(new pcl::PointCloud<pcl::PFHSignature125>());
-		if (strcmp(keypoints_type,"0")==0)
+		if (strcmp(keypoints_type,"0")==0 || strcmp(keypoints_type,"KPSZ")==0 || strcmp(keypoints_type,"KPSNE")==0)
 		{
 			descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal);
 		}
@@ -531,13 +470,14 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		{
 			descriptorPFH_actual = PFH(cloud_filtered3, cloud_normal, indices_KP);
 		}
-		if (keypoints_anterior->points.size() > 0)
+		if (keypoints_anterior->points.size() > 0 && (strcmp(keypoints_type,"KPH")==0 || strcmp(keypoints_type,"KPISS")==0))
 		{
 			std::cout << "Calculo correspondencia PFH" << std::endl;
 			int corr=correspondences_PFH(descriptorPFH_anterior, descriptorPFH_actual, keypoints_anterior, cloud_KP)->size();
 			std_msgs::Float32 outToPy;
 			outToPy.data = (float)(corr);
 			pubToPy.publish(outToPy);
+			n_corr+=corr;
 		}
 		descriptorPFH_anterior = descriptorPFH_actual;
 	}
@@ -545,7 +485,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 	{
 		std::cout << "Calculo feature FPFH" << std::endl;
 		pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptorFPFH_actual(new pcl::PointCloud<pcl::FPFHSignature33>());
-		if (strcmp(keypoints_type,"0")==0)
+		if (strcmp(keypoints_type,"0")==0 || strcmp(keypoints_type,"KPSZ")==0 || strcmp(keypoints_type,"KPSNE")==0)
 		{
 			descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal);
 		}
@@ -553,13 +493,14 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		{
 			descriptorFPFH_actual = FPFH(cloud_filtered3, cloud_normal, indices_KP);
 		}
-		if (keypoints_anterior->points.size() > 0)
+		if (keypoints_anterior->points.size() > 0 && (strcmp(keypoints_type,"KPH")==0 || strcmp(keypoints_type,"KPISS")==0))
 		{
 			std::cout << "Calculo correspondencia FPFH" << std::endl;
 			int corr=correspondences_FPFH(descriptorFPHF_anterior, descriptorFPFH_actual, keypoints_anterior, cloud_KP)->size();
 			std_msgs::Float32 outToPy;
 			outToPy.data = (float)(corr);
 			pubToPy.publish(outToPy);
+			n_corr+=corr;
 		}
 		descriptorFPHF_anterior = descriptorFPFH_actual;
 	}
@@ -567,7 +508,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 	{
 		std::cout << "Calculo feature VFH" << std::endl;
 		pcl::PointCloud<pcl::VFHSignature308>::Ptr descriptorVFH_actual(new pcl::PointCloud<pcl::VFHSignature308>());
-		if (strcmp(keypoints_type,"0")==0)
+		if (strcmp(keypoints_type,"0")==0 || strcmp(keypoints_type,"KPSZ")==0 || strcmp(keypoints_type,"KPSNE")==0)
 		{
 			descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal);
 		}
@@ -575,10 +516,6 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 		{
 			descriptorVFH_actual = VFH(cloud_filtered3, cloud_normal, indices_KP);
 		}
-		/*if (keypoints_anterior->points.size() != 0){
-			std::cout << "Calculo correspondencia VFH" << std::endl;
-			correspondences_VFH(descriptorVFH_anterior, descriptorVFH_actual, keypoints_anterior, cloud_KP);
-		}*/
 		descriptorVFH_anterior = descriptorVFH_actual;
 	}
 	else
@@ -589,21 +526,23 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 	keypoints_anterior = cloud_KP;
 
 
-/********************** PUBLICACION NUBES DE PUNTOS PARA SU VISUALIZACION (DESARROLLO) ***********************************
+/********************** PUBLICACION NUBES DE PUNTOS PARA SU VISUALIZACION (DESARROLLO) ***********************************/
 	// Preparo como mensajes la nube filtrada y los KeyPoints que quiero visualizar
    	sensor_msgs::PointCloud2 outputF;
    	pcl::toROSMsg(*cloud_filtered3, outputF);
 	outputF.header.frame_id = "/velodyne";
 
    	sensor_msgs::PointCloud2 outputKP;
-   	pcl::toROSMsg(*cloud_filtered3, outputKP);
+   	pcl::toROSMsg(*cloud_KP, outputKP);
 	outputKP.header.frame_id = "/velodyne";
 
 	// Publish the data
 	pubF.publish (outputF);
 	pubKP.publish (outputKP);
-	//*/
-    std::cout << "Numero de mensajes procesados: " << i << std::endl << std::endl;
+
+	std::cout << "Numero de mensajes procesados: " << i << std::endl << std::endl;
+	if(i>1)	std::cout << "Numero medio de correspondencias: " << ((float)n_corr/(float)(i-1)) << std::endl << std::endl;
+	std::cout << "Numero medio de KP: " << (float)n_kp/(float)i << std::endl << std::endl;
 }
 
 /*************** FUNCIONES DE DETERMINACION DE METODOS ELEGIDOS ***********************/
