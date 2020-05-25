@@ -335,7 +335,7 @@ pcl::CorrespondencesPtr correspondences_PFH(const pcl::PointCloud<pcl::PFHSignat
 	rejector_sac.setInputSource(source_keypoints);
 	rejector_sac.setInputTarget(target_keypoints);
 	rejector_sac.setInlierThreshold(2.5); // distance in m, not the squared distance
-	rejector_sac.setMaximumIterations(1000000);
+	rejector_sac.setMaximumIterations(1000);
 	rejector_sac.setRefineModel(false);
 	rejector_sac.setInputCorrespondences(correspondences_result_rej_one_to_one);;
 	rejector_sac.getCorrespondences(*correspondences_filtered);
