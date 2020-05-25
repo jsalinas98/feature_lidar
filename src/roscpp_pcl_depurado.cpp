@@ -501,7 +501,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 	}
 	else{
 		if(i>1)	std::cout << "Numero medio de correspondencias: " << ((float)n_corr/(float)(i-1)) << std::endl << std::endl;
-		if(strcmp(keypoints_type,"0")==0 && i>0) std::cout << "Numero medio de KP: " << (float)n_kp/(float)i << std::endl << std::endl;
+		if(strcmp(keypoints_type,"0")!=0 && i>0) std::cout << "Numero medio de KP: " << (float)n_kp/(float)i << std::endl << std::endl;
 	}
 }
 
