@@ -26,7 +26,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloudBag
+    SyncSource: ""
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
@@ -98,7 +98,7 @@ Visualization Manager:
       Max Intensity: 32.5999985
       Min Color: 0; 0; 0
       Min Intensity: 0
-      Name: PointCloudROSout
+      Name: PointCloudFiltered
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
