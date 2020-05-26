@@ -554,17 +554,17 @@ int main (int argc, char** argv)
 
 /************* ELECCION DEL METODO DE KEYPOINTS Y FEATURE SEGUN PARAMETROS DE ENTRADA *****************/
 	if (argc > 1){
-		if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"PFH")==0)
+		if (strcmp(argv[1],"KPH")==0 && argc == 2)
+			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_fpfh);
+		else if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"PFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_pfh);
 		else if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"FPFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_fpfh);
-		else if (strcmp(argv[1],"KPH")==0 && argc == 2)
-			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_fpfh);
+		else if (strcmp(argv[1],"KPISS")==0 && argc == 2)
+			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_fpfh);
 		else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"PFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_pfh);
 		else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"FPFH")==0)
-			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_fpfh);
-		else if (strcmp(argv[1],"KPISS")==0 && argc == 2)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_fpfh);
 		else if (strcmp(argv[1],"PFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, pfh);

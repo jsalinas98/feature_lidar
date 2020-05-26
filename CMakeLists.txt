@@ -152,6 +152,9 @@ include_directories(
   add_executable (roscpp_pcl_depurado src/roscpp_pcl_depurado.cpp)
   target_link_libraries (roscpp_pcl_depurado ${catkin_LIBRARIES})
 
+  add_executable (roscpp_pcl_final src/roscpp_pcl_final.cpp)
+  target_link_libraries (roscpp_pcl_final ${catkin_LIBRARIES})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/feature_lidar.cpp

@@ -494,14 +494,14 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr& cloud_msg, char* keypoints
 
 	std::cout << "Numero de mensajes procesados: " << i << std::endl << std::endl;
 	if(strcmp(feature_type,"0")==0 && strcmp(keypoints_type,"KP")==0){
-		if(i>1){
+		if(i>0){
 			std::cout << "Numero medio de KeyPoints por scan: " << std::endl;
 			std::cout << "  Harris 3D: " << (float)all_kp[0]/(float)i << "  ISS 3D: " << (float)all_kp[1]/(float)i << "  Sift Z: " << (float)all_kp[2]/(float)i << "  Sift NE: " << (float)all_kp[3]/(float)i << std::endl << std::endl;
 		}
 	}
 	else{
 		if(i>1)	std::cout << "Numero medio de correspondencias: " << ((float)n_corr/(float)(i-1)) << std::endl << std::endl;
-		if(strcmp(keypoints_type,"0")==0) std::cout << "Numero medio de KP: " << (float)n_kp/(float)i << std::endl << std::endl;
+		if(strcmp(keypoints_type,"0")!=0 && i>0) std::cout << "Numero medio de KP: " << (float)n_kp/(float)i << std::endl << std::endl;
 	}
 }
 
@@ -554,17 +554,17 @@ int main (int argc, char** argv)
 
 /************* ELECCION DEL METODO DE KEYPOINTS Y FEATURE SEGUN PARAMETROS DE ENTRADA *****************/
 	if (argc > 1){
-		if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"PFH")==0)
+		if (strcmp(argv[1],"KPH")==0 && argc == 2)
+			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_fpfh);
+		else if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"PFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_pfh);
 		else if (strcmp(argv[1],"KPH")==0 && strcmp(argv[2],"FPFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_fpfh);
-		else if (strcmp(argv[1],"KPH")==0 && argc == 2)
-			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kph_fpfh);
+		else if (strcmp(argv[1],"KPISS")==0 && argc == 2)
+			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_fpfh);
 		else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"PFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_pfh);
 		else if (strcmp(argv[1],"KPISS")==0 && strcmp(argv[2],"FPFH")==0)
-			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_fpfh);
-		else if (strcmp(argv[1],"KPISS")==0 && argc == 2)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, kpiss_fpfh);
 		else if (strcmp(argv[1],"PFH")==0)
 			sub = nh.subscribe(IMAGE_TOPIC, COLA_RECEPCION, pfh);
